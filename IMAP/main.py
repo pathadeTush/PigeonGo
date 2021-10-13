@@ -30,6 +30,11 @@ PORT = 993
 # imap_socket.close()
 # print('Done Successfully!')
 
+'''
+imap.gmail.com
+Requires SSL: Yes 
+Port: 99
+'''
 
 
 class IMAP:
@@ -70,6 +75,6 @@ class IMAP:
         self.__socket = context.wrap_socket(self.__socket, server_hostname=self.HOST)
 
 
-smpt_socket = IMAP()
+imap_socket = IMAP()
 
         
