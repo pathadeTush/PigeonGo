@@ -1,7 +1,7 @@
 import socket
 import ssl
 import os
-
+import base64
 
 # smpt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # smpt_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -30,54 +30,15 @@ import os
 
 
 '''
-    The following dialog illustrates how a client and server can start a TLS session:
-    
-    S: <waits for connection on TCP port 25>
-    C: <opens connection>
-    S: 220 mail.imc.org SMTP service ready
-    C: EHLO mail.ietf.org
-    S: 250-mail.imc.org offers a warm hug of welcome
-    S: 250 STARTTLS
-    C: STARTTLS
-    S: 220 Go ahead
-    C: <starts TLS negotiation>
-'''
-'''
-    AUTH cmd
-    A server challenge, otherwise known as a ready response, is a 334 reply with the text part containing a BASE64 encoded string. The client answer consists of a line containing a BASE64 encoded string. If the client wishes to cancel an authentication exchange, it issues a line with a single "*". If the server receives such an answer, it MUST reject the AUTH command by sending a 501 reply.
+    TLS is successor to SSL
+    TLS more secure and performant, most modern web browsers no longer support SSL 2.0 and SSL 3.0
 
-    334 : ready
-    501 : rejected
-    235 : On successfully completion of Authentication of client
-    432 : A password transition is needed
-    534 : Authentication mechanism is too weak
-    538 : Encryption required for requested authentication mechanism
-    454 : Temporary authentication failure
-    530 : Authentication required
-
-   Examples:
-    S: 220 smtp.example.com ESMTP server ready
-    C: EHLO jgm.example.com
-    S: 250-smtp.example.com
-    S: 250 AUTH CRAM-MD5 DIGEST-MD5
-    C: AUTH FOOBAR
-    S: 504 Unrecognized authentication type.
-    C: AUTH CRAM-MD5
-    S: 334
-    PENCeUxFREJoU0NnbmhNWitOMjNGNndAZWx3b29kLmlubm9zb2Z0LmNvbT4=
-    C: ZnJlZCA5ZTk1YWVlMDljNDBhZjJiODRhMGMyYjNiYmFlNzg2ZQ==
-    S: 235 Authentication successful.  
-'''
-'''
-TLS is successor to SSL
-TLS more secure and performant, most modern web browsers no longer support SSL 2.0 and SSL 3.0
-
-    smtp.gmail.com 
-    Requires SSL: Yes 
-    Requires TLS: Yes (if available) 
-    Requires Authentication: Yes 
-    Port for SSL: 465 
-    Port for TLS/STARTTLS: 587
+        smtp.gmail.com 
+        Requires SSL: Yes 
+        Requires TLS: Yes (if available) 
+        Requires Authentication: Yes 
+        Port for SSL: 465 
+        Port for TLS/STARTTLS: 587
 
 '''
 '''
@@ -109,12 +70,27 @@ class SMTP:
     RCPT_TO_CMD = 'RCPT TO: '
     DATA_CMD = 'DATA'
     CRLF = '\r\n'
-    END_MSG_CMD = CRLF + '.'+ CRLF
+    END_MSG_CMD =  '.'
+    QUIT_CMD = 'QUIT'
 
-    MAIL_USERNAME = os.environ.get('EMAIL_USER')
-    MAIL_PASSWORD = os.environ.get('EMAIL_PASS')
+    email_id = os.environ.get('EMAIL_USER')
+    email_pwd = os.environ.get('EMAIL_PASS')
 
     def __init__(self, service_provider = 'gmail'):
+
+        '''
+            The following dialog illustrates how a client and server can start a TLS session:
+            
+            S: <waits for connection on TCP port 25>
+            C: <opens connection>
+            S: 220 mail.imc.org SMTP service ready
+            C: EHLO mail.ietf.org
+            S: 250-mail.imc.org offers a warm hug of welcome
+            S: 250 STARTTLS
+            C: STARTTLS
+            S: 220 Go ahead
+            C: <starts TLS negotiation>
+        '''
         self.service_provider = service_provider
         self.HOST = mail_servers[service_provider].smtp_server
         self.PORT = mail_servers[service_provider].port
@@ -142,6 +118,7 @@ class SMTP:
         self.say_hello()
         self.start_TLS()
         self.SSL_Wrapper()
+        self.say_hello() # One more time hello require for outlook
 
     def say_hello(self):
         code, response = self.send_cmd(self.HELLO_CMD)
@@ -170,25 +147,125 @@ class SMTP:
 
     
     def login(self):
+
+        '''
+            AUTH cmd
+            A server challenge, otherwise known as a ready response, is a 334 reply with the text part containing a BASE64 encoded string. The client answer consists of a line containing a BASE64 encoded string. If the client wishes to cancel an authentication exchange, it issues a line with a single "*". If the server receives such an answer, it MUST reject the AUTH command by sending a 501 reply.
+
+            334 : ready
+            501 : rejected
+            235 : On successfully completion of Authentication of client
+            432 : A password transition is needed
+            534 : Authentication mechanism is too weak
+            538 : Encryption required for requested authentication mechanism
+            454 : Temporary authentication failure
+            530 : Authentication required
+
+        Examples:
+            S: 220 smtp.example.com ESMTP server ready
+            C: EHLO jgm.example.com
+            S: 250-smtp.example.com
+            S: 250 AUTH CRAM-MD5 DIGEST-MD5
+            C: AUTH FOOBAR
+            S: 504 Unrecognized authentication type.
+            C: AUTH CRAM-MD5
+            S: 334
+            PENCeUxFREJoU0NnbmhNWitOMjNGNndAZWx3b29kLmlubm9zb2Z0LmNvbT4=
+            C: ZnJlZCA5ZTk1YWVlMDljNDBhZjJiODRhMGMyYjNiYmFlNzg2ZQ==
+            S: 235 Authentication successful.  
+        '''
+
+        '''
+            Reference: https://www.ndchost.com/wiki/mail/test-smtp-auth-telnet
+
+            334 VXNlcm5hbWU6; this is a base64 encoded string asking you for your username
+
+            334 UGFzc3dvcmQ6;. Again this is a base64 encoded string now asking for your password
+        '''
+
         code, response = self.send_cmd(self.AUTH_CMD)
-        if code == '501':
-            print('Rejected by server')
-        print(f'code: {code}\nAUTH response: {response}')
+        if code == '334':
+            print('Server is ready for authentication')
+        else:
+            raise Exception('Server isn\'t ready for authentication')
+        # print(f'code: {code}\nAUTH response: {response}')
 
-        code, response = self.send_cmd(self.MAIL_USERNAME)
-        code, response = self.send_cmd(self.MAIL_PASSWORD)
+        try:
+            email_id = self.email_id
+            base64_email_id = base64.b64encode(email_id.encode('ascii')).decode() 
+            code, response = self.send_cmd(base64_email_id)
+            print(f'email response: {response}')
+            if code != '334':
+                raise Exception()
 
-        if code != '235':
-            raise Exception('Authentication failed!')
-        print('Authenticated successfully!')
+            email_pwd = self.email_pwd
+            base64_email_pwd = base64.b64encode(email_pwd.encode('ascii')).decode() 
+            code, response = self.send_cmd(base64_email_pwd)
+            print(f'password response: {response}')
+
+            code = response[:3]
+
+            if code != '235':
+                raise Exception()
+        except Exception:
+            raise Exception('Authentication Failed! Invalid Mail ID OR Password')
+        
+        print(f'Authenticated Successfully!')
+    
+    def send_email(self, FROM_email, TO_emails):
+        self.config_MAIL_FROM(FROM_email)
+        for TO_email in TO_emails:
+            self.config_RCPT_TO(TO_email)
+        self.send_DATA()
+
+
+    def config_MAIL_FROM(self, email):
+        cmd = self.MAIL_FROM_CMD + '<' + email + '>'
+        code, response = self.send_cmd(cmd)
+        print(f'MAIL FROM response: {response}')
+        if code != '250':
+            raise Exception('Invalid sender email')
+    
+    def config_RCPT_TO(self, email):
+        cmd = self.RCPT_TO_CMD + '<' + email + '>'
+        code, response = self.send_cmd(cmd)
+        print(f'RCPT TO response: {response}')
+        if code != '250':
+            raise Exception('Invalid reciever email')
+
+    def send_DATA(self):
+        code, response = self.send_cmd(self.DATA_CMD)
+        if code != '354':
+            raise Exception('SytaxError. Error occured in DATA cmd')
+        
+        data = input('Type your message here...\n') + self.CRLF
+
+        self.__socket.send(data.encode('ascii'))
+
+        code, response = self.send_cmd(self.END_MSG_CMD)
+        print(f'END MSG response: {response}')
+
+        if code != '250':
+            raise Exception('Error occured! Mail not sent successfully! Try again!')
+        print('Mail sent successfully <^_^>')
+    
+    def quit(self):
+        code, response =  self.send_cmd(self.QUIT_CMD)
+        print(f'QUIT response: {response}')
+        if code != '221':
+            raise Exception('Error occured while QUIT')
+        print('Quit transmission channel successfully!')
     
     def close_connection(self):
         self.__socket.close()
+        print('\nDisconnected...')
     
 
 
 smtp_socket = SMTP()
 smtp_socket.login()
-# smtp_socket.close_connection()
+smtp_socket.send_email('pathadetushar2@gmail.com', ['tusharpathade475@gmail.com'])
+smtp_socket.quit()
+smtp_socket.close_connection()
 
         
