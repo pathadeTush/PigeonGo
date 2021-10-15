@@ -63,14 +63,24 @@ mail_servers['outlook'] = MAIL_SERVER('smtp.office365.com', 587)
 
 class SMTP:
 
-    HELLO_CMD = 'EHLO Tushar'
+    # Timeouts
+    CONN_TOUT = 300 # 5 min
+    MAIL_TOUT = 300 # 5 min
+    RCPT_TOUT = 300 # 5 min
+    DATA_INITIATION_TOUT = 120 # 2 min
+    DATA_BLOCK_TOUT = 180 # 3 min
+    DATA_TERMINATION_TOUT = 600 # 10 min
+
+
+    # Commands
+    HELLO_CMD = 'EHLO Greetings'
     STARTTLS_CMD = 'STARTTLS'
     AUTH_CMD = 'AUTH LOGIN'
     MAIL_FROM_CMD = 'MAIL FROM: '
     RCPT_TO_CMD = 'RCPT TO: '
     DATA_CMD = 'DATA'
     CRLF = '\r\n'
-    END_MSG_CMD =  '.'
+    END_MSG_CMD = CRLF + '.' + CRLF
     QUIT_CMD = 'QUIT'
 
     email_id = os.environ.get('EMAIL_USER')
@@ -99,11 +109,20 @@ class SMTP:
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+        self.connect()
+        self.say_hello()
+        self.start_TLS()
+        self.SSL_Wrapper()
+        self.say_hello() # One more time hello require for outlook
+
+    def connect(self):
         # send connection request
+        self.__socket.settimeout(self.CONN_TOUT)
         try:
             self.__socket.connect((self.HOST, self.PORT))
         except Exception as e:
             raise Exception('Check your internet connection once!')
+        self.__socket.settimeout(None)
 
         connection_response = self.__socket.recv(1024).decode().rstrip('\r\t\n')
         print(f'connection response: {connection_response}')
@@ -115,13 +134,9 @@ class SMTP:
         else:
             print(f'connected to {self.HOST, self.PORT} successfully!')
 
-        self.say_hello()
-        self.start_TLS()
-        self.SSL_Wrapper()
-        self.say_hello() # One more time hello require for outlook
-
     def say_hello(self):
-        code, response = self.send_cmd(self.HELLO_CMD)
+        cmd = self.HELLO_CMD
+        code, response = self.send_cmd(cmd)
         if code != '250':
             print('No acknowledgement for hello')
         # print(f'hello response: {response}')
@@ -220,29 +235,61 @@ class SMTP:
 
 
     def config_MAIL_FROM(self, email):
-        cmd = self.MAIL_FROM_CMD + '<' + email + '>'
-        code, response = self.send_cmd(cmd)
+        self.__socket.settimeout(self.MAIL_TOUT)
+        try:
+            cmd = self.MAIL_FROM_CMD + '<' + email + '>'
+            code, response = self.send_cmd(cmd)
+        except socket.timeout():
+            raise Exception('__MAIL Timeout Crossed!__')
+        self.__socket.settimeout(None)
+
         print(f'MAIL FROM response: {response}')
         if code != '250':
             raise Exception('Invalid sender email')
     
     def config_RCPT_TO(self, email):
-        cmd = self.RCPT_TO_CMD + '<' + email + '>'
-        code, response = self.send_cmd(cmd)
+        self.__socket.settimeout(self.RCPT_TOUT)
+        try:
+            cmd = self.RCPT_TO_CMD + '<' + email + '>'
+            code, response = self.send_cmd(cmd)
+        except socket.timeout():
+            raise Exception('__RCPT Timeout crossed!__')
+        self.__socket.settimeout(None)
         print(f'RCPT TO response: {response}')
-        if code != '250':
+
+        if code == '551':
+            email = response.split('>')[0].split('<')[1]
+            self.config_RCPT_TO(email)
+
+        if code not in ('250', '251'):
             raise Exception('Invalid reciever email')
 
     def send_DATA(self):
-        code, response = self.send_cmd(self.DATA_CMD)
+        self.__socket.settimeout(self.DATA_INITIATION_TOUT)
+        try:
+            code, response = self.send_cmd(self.DATA_CMD)
+        except socket.timeout():
+            raise Exception('__DATA Intiation Timeout Crossed!__')
+        self.__socket.settimeout(None)
         if code != '354':
             raise Exception('SytaxError. Error occured in DATA cmd')
         
-        data = input('Type your message here...\n') + self.CRLF
+        data = input('Type your message here...\n')
 
-        self.__socket.send(data.encode('ascii'))
+        self.__socket.settimeout(self.DATA_BLOCK_TOUT)
+        try: 
+            self.__socket.send(data.encode('ascii'))
+        except socket.timeout():
+            raise Exception('__DATA BLOCK Timeout Crossed!__')
+        self.__socket.settimeout(None)
 
-        code, response = self.send_cmd(self.END_MSG_CMD)
+        self.__socket.settimeout(self.DATA_TERMINATION_TOUT)
+        try: 
+            code, response = self.send_cmd(self.END_MSG_CMD)
+        except socket.timeout():
+            raise Exception('__DATA BLOCK Timeout Crossed!__')
+        self.__socket.settimeout(None)
+
         print(f'END MSG response: {response}')
 
         if code != '250':
@@ -264,7 +311,7 @@ class SMTP:
 
 smtp_socket = SMTP()
 smtp_socket.login()
-smtp_socket.send_email('pathadetushar2@gmail.com', ['tusharpathade475@gmail.com'])
+# smtp_socket.send_email('pathadetushar2@gmail.com', ['tusharpathade475@gmail.com'])
 smtp_socket.quit()
 smtp_socket.close_connection()
 
