@@ -1,8 +1,62 @@
 import socket
 import ssl
+import os
 
 HOST = 'imap.gmail.com' 
 PORT = 993
+
+'''
+imap.gmail.com
+Requires SSL: Yes 
+Port: 99
+'''
+
+class IMAP:
+
+    email_id = os.environ.get('EMAIL_USER')
+    email_pwd = os.environ.get('EMAIL_PASS')
+
+    HOST = 'imap.gmail.com'
+    PORT = 993
+
+    def __init__(self, HOST = HOST, PORT = PORT):
+        self.HOST = HOST
+        self.PORT = PORT
+
+        # TCP socket
+        self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        # SSL Wrapper required for security to communicate with smtp server of google
+        self.SSL_Wrapper()
+
+        self.connect()
+
+    def SSL_Wrapper(self):
+        context = ssl.create_default_context()
+        self.__socket = context.wrap_socket(self.__socket, server_hostname=self.HOST)
+
+    def connect(self):
+        # send connection request
+        try:
+            self.__socket.connect((self.HOST, self.PORT))
+        except Exception as e:
+            raise ConnectionError('__Check your internet connection once!')
+
+        # verify confirmation from server
+        connection_response = self.__socket.recv(1024).decode()
+        print(f'connection response: {connection_response}')
+        status = connection_response[2:4]
+        if status != 'OK':
+            raise ConnectionError(f'Fails to connect {self.HOST, self.PORT}')
+        else:
+            print(f'connected to {self.HOST, self.PORT} successfully!')
+
+    def login(self):
+
+
+
+imap_socket = IMAP()
 
 # imap_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # imap_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -29,52 +83,3 @@ PORT = 993
 
 # imap_socket.close()
 # print('Done Successfully!')
-
-'''
-imap.gmail.com
-Requires SSL: Yes 
-Port: 99
-'''
-
-
-class IMAP:
-
-    HOST = 'imap.gmail.com'
-    PORT = 993
-
-    def __init__(self, HOST = HOST, PORT = PORT):
-        self.HOST = HOST
-        self.PORT = PORT
-
-        # TCP socket
-        self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-
-        # SSL Wrapper required for security to communicate with smtp server of google
-        self.SSL_Wrapper()
-
-        # send connection request
-        try:
-            self.__socket.connect((self.HOST, self.PORT))
-        except Exception as e:
-            raise ConnectionError('__Check your internet connection once!')
-
-        # verify confirmation from server
-        connection_response = self.__socket.recv(1024).decode()
-        print(f'connection response: {connection_response}')
-        status = connection_response[2:4]
-        if status != 'OK':
-            raise ConnectionError(f'Fails to connect {self.HOST, self.PORT}')
-        else:
-            print(f'connected to {self.HOST, self.PORT} successfully!')
-
-    
-    def SSL_Wrapper(self):
-        context = ssl.create_default_context()
-        self.__socket = context.wrap_socket(self.__socket, server_hostname=self.HOST)
-
-
-imap_socket = IMAP()
-
-        

@@ -2,32 +2,11 @@ import socket
 import ssl
 import os
 import base64
-
-# smpt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# smpt_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-# smpt_socket.connect((HOST, PORT))
-
-# ''' Wrap socket in SSL To make connection by initial handshake '''
-# context = ssl.create_default_context()
-# smpt_socket = context.wrap_socket(smpt_socket, server_hostname=HOST)
-
-# msg = smpt_socket.recv(1024).decode()
-# print(f'msg: {msg}')
-
-# # Say Hello
-# hello_msg = 'EHLO TUSHAR' + '\r\n.\r\n'
-# smpt_socket.send(hello_msg.encode('ascii'))
-# response = smpt_socket.recv(1024).decode()
-# print(f'response for hello: {response}')
-
-# # LOGIN
-# hello_msg = 'AUTH LOGIN' + '\r\n.\r\n'
-# smpt_socket.send(hello_msg.encode('ascii'))
-# response = smpt_socket.recv(1024).decode()
-# print(f'response for login: {response}')
-
-# print('Done Successfully!')
-
+import time
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 '''
     TLS is successor to SSL
@@ -227,12 +206,26 @@ class SMTP:
         
         print(f'Authenticated Successfully!')
     
-    def send_email(self, FROM_email, TO_emails):
+    def send_email(self, TO_email, Subject, Attachment = False):
+        FROM_email = self.email_id
         self.config_MAIL_FROM(FROM_email)
-        for TO_email in TO_emails:
-            self.config_RCPT_TO(TO_email)
-        self.send_DATA()
+        self.config_RCPT_TO(TO_email)
+        self.initiate_DATA()
 
+        msg = MIMEMultipart()
+        msg['From'] = FROM_email
+        msg['To'] = TO_email
+        msg['Subject'] = Subject
+        body = f'Sending email via imap-smtp client. {time.ctime()}'
+        msg.attach(MIMEText(body, 'plain'))
+
+        if Attachment:
+            self.add_attachment(msg, Attachment)
+
+        data = msg.as_string()
+        # print(data)
+        self.send_DATA(data)
+        self.terminate_DATA()
 
     def config_MAIL_FROM(self, email):
         self.__socket.settimeout(self.MAIL_TOUT)
@@ -264,7 +257,7 @@ class SMTP:
         if code not in ('250', '251'):
             raise Exception('Invalid reciever email')
 
-    def send_DATA(self):
+    def initiate_DATA(self):
         self.__socket.settimeout(self.DATA_INITIATION_TOUT)
         try:
             code, response = self.send_cmd(self.DATA_CMD)
@@ -273,9 +266,8 @@ class SMTP:
         self.__socket.settimeout(None)
         if code != '354':
             raise Exception('SytaxError. Error occured in DATA cmd')
-        
-        data = input('Type your message here...\n')
 
+    def send_DATA(self, data):
         self.__socket.settimeout(self.DATA_BLOCK_TOUT)
         try: 
             self.__socket.send(data.encode('ascii'))
@@ -283,6 +275,7 @@ class SMTP:
             raise Exception('__DATA BLOCK Timeout Crossed!__')
         self.__socket.settimeout(None)
 
+    def terminate_DATA(self):
         self.__socket.settimeout(self.DATA_TERMINATION_TOUT)
         try: 
             code, response = self.send_cmd(self.END_MSG_CMD)
@@ -294,8 +287,16 @@ class SMTP:
 
         if code != '250':
             raise Exception('Error occured! Mail not sent successfully! Try again!')
-        print('Mail sent successfully <^_^>')
-    
+        print('Mail sent successfully *_*')
+
+    def add_attachment(self, msg, Attachment):
+        attachment = open(Attachment, 'rb')
+        p = MIMEBase('application', 'octet-stream')
+        p.set_payload((attachment).read())
+        encoders.encode_base64(p)
+        p.add_header('Content-Disposition', f'attachement; filename= {Attachment}')
+        msg.attach(p)
+
     def quit(self):
         code, response =  self.send_cmd(self.QUIT_CMD)
         print(f'QUIT response: {response}')
@@ -311,8 +312,32 @@ class SMTP:
 
 smtp_socket = SMTP()
 smtp_socket.login()
-# smtp_socket.send_email('pathadetushar2@gmail.com', ['tusharpathade475@gmail.com'])
+smtp_socket.send_email('tusharpathade475@gmail.com', 'Mailing from imap-smtp client', 'attachment.txt')
 smtp_socket.quit()
 smtp_socket.close_connection()
-
         
+
+# smpt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# smpt_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+# smpt_socket.connect((HOST, PORT))
+
+# ''' Wrap socket in SSL To make connection by initial handshake '''
+# context = ssl.create_default_context()
+# smpt_socket = context.wrap_socket(smpt_socket, server_hostname=HOST)
+
+# msg = smpt_socket.recv(1024).decode()
+# print(f'msg: {msg}')
+
+# # Say Hello
+# hello_msg = 'EHLO TUSHAR' + '\r\n.\r\n'
+# smpt_socket.send(hello_msg.encode('ascii'))
+# response = smpt_socket.recv(1024).decode()
+# print(f'response for hello: {response}')
+
+# # LOGIN
+# hello_msg = 'AUTH LOGIN' + '\r\n.\r\n'
+# smpt_socket.send(hello_msg.encode('ascii'))
+# response = smpt_socket.recv(1024).decode()
+# print(f'response for login: {response}')
+
+# print('Done Successfully!')
