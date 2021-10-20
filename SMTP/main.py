@@ -312,7 +312,7 @@ class SMTP:
 
 smtp_socket = SMTP()
 smtp_socket.login()
-smtp_socket.send_email('tusharpathade475@gmail.com', 'Mailing from imap-smtp client', 'attachment.txt')
+smtp_socket.send_email('pathadetc19.comp@coep.ac.in', 'Mailing from imap-smtp client', 'attachment.txt')
 smtp_socket.quit()
 smtp_socket.close_connection()
         
