@@ -3,13 +3,18 @@ import ssl
 import os
 import time
 
-HOST = 'imap.gmail.com' 
-PORT = 993
+'''
+    imap.gmail.com
+    Requires SSL: Yes 
+    Port: 99
+'''
 
 '''
-imap.gmail.com
-Requires SSL: Yes 
-Port: 99
+    In addition to the universal commands (CAPABILITY, NOOP, and LOGOUT),
+    and the authenticated state commands (SELECT, EXAMINE, CREATE,
+    DELETE, RENAME, SUBSCRIBE, UNSUBSCRIBE, LIST, LSUB, STATUS, and
+    APPEND), the following commands are valid in the selected state:
+    CHECK, CLOSE, EXPUNGE, SEARCH, FETCH, STORE, COPY, and UID.
 '''
 
 class IMAP:
@@ -25,15 +30,20 @@ class IMAP:
 
     # Any state's cmd's  
     LOGOUT_CMD = 'a023 LOGOUT'
+    CAPABILITY_CMD = 'a444 CAPABILITY'
+    NOOP_CMD = 'a155 NOOP'
 
     # Not Authenticated cmd's
-    CAPABILITY_CMD = 'a444 CAPABILITY'
     LOGIN_CMD = 'a001 LOGIN '
 
     # Authenticated cmd's
-    SELECT_CMD = 'a002 SELECT INBOX'
-    LIST_CMD = 'a003 LIST "" "*"'
-    EXAMINE = 'a004 EXAMINE INBOX'
+    LIST_CMD = 'a002 LIST "" "*"'
+    SELECT_CMD = 'a003 SELECT INBOX'
+    EXAMINE_CMD = 'a004 EXAMINE INBOX'
+    STATUS_CMD = 'a005 STATUS INBOX (UIDNEXT MESSAGES UIDVALIDITY HIGHESTMODSEQ)'
+
+    # Selected State cmd's
+    CLOSE_CMD = 'a012 CLOSE'
 
     def __init__(self, HOST = HOST, PORT = PORT):
         self.HOST = HOST
@@ -51,9 +61,25 @@ class IMAP:
         # self.__socket.settimeout(2)
         cmd = cmd + self.CRLF
         self.__socket.send(cmd.encode())
-        response = self.__socket.recv(1024).decode().rstrip('\r\t\n')
-        code = response.split('\n')[-1].split(' ')[1]
-        return code, response
+
+        status_code = ["OK", "NO", "BAD"]
+        Response = ''
+        while True:
+            response = self.__socket.recv(1024).decode().rstrip('\r\t\n')
+            try:
+                code = response.split('\n')[-1].split(' ')[1]
+            except:
+                pass 
+            else:
+                Response += response
+                if code in status_code:
+                    break
+                continue
+        
+        return code, Response
+
+
+    ''' Not Authenticated Functions '''
 
     def SSL_Wrapper(self):
         context = ssl.create_default_context()
@@ -139,40 +165,79 @@ class IMAP:
             a003 OK Success       
         '''
 
+    # Open Mailbox
     def Select(self, mailbox):
-        SELECT_CMD = f'a002 SELECT {mailbox}'
+        SELECT_CMD = f'a003 SELECT {mailbox}'
         code, response = self.Send_CMD(SELECT_CMD)
         print(mailbox)
         print(f'SELECT response: {response}\n')
         if code != 'OK':
             raise Exception('__SELECT Error__')
     
+    # Read Mailbox
     def Examine(self, mailbox):
-        EXAMINE_CMD = f'a002 EXAMINE {mailbox}'
+        EXAMINE_CMD = f'a004 EXAMINE {mailbox}'
         code, response = self.Send_CMD(EXAMINE_CMD)
         print(mailbox)
         print(f'EXAMINE response: {response}\n')
         if code != 'OK':
             raise Exception('__EXAMINE Error__')
+
+    # Check Status of Mailbox
+    def Status(self, mailbox):
+        STATUS_CMD = f'a005 STATUS {mailbox} (UIDNEXT MESSAGES UIDVALIDITY HIGHESTMODSEQ)'
+        code, response = self.Send_CMD(STATUS_CMD)
+        print(f'STATUS response: {response}\n')
+        if code != 'OK':
+            raise Exception('__STATUS Error__')
+
+    ''' Selected State Function '''
+
+    # Disselect mailbox. Used after Select or Examine
+    def close_mailbox(self):
+        code, response = self.Send_CMD(self.CLOSE_CMD)
+        print(f'CLOSE Response: {response}')
+        if code != 'OK':
+            raise Exception('__CLOSE Error__')
     
+    def fetch_mail_header(self, start_index, total):
+        cmd = f'a225 FETCH {start_index}:{start_index + total - 1} (FLAGS BODY[HEADER.FIELDS (DATE FROM)])'
+        code, response = self.Send_CMD(cmd)
+        print(f'FETCH response: {response}')
+        if code != 'OK':
+            raise Exception('__FETCH Error__')
+
+    ''' Any State Functions '''
+
     def Logout(self):
         code, response = self.Send_CMD(self.LOGOUT_CMD)
         # print(f'logout response: {response}')
         if code != 'OK':
-            raise Exception('__LOGOUT_Error__')
+            raise Exception('__LOGOUT Error__')
         print('Logout Successfully!')
+
+    def Noop(self):
+        code, response = self.Send_CMD(self.NOOP_CMD)
+        # print(f'NOOP response: {response}')
+        if code != 'OK':
+            raise Exception('__NOOP Error__')
+        print('NOOP Successfully!')
 
     def close_connection(self):
         print('\nDisconnected...')
         self.__socket.close()
 
 imap_socket = IMAP()
-mailboxes, folders = imap_socket.Get_All_MailBoxes()
-print(mailboxes)
-print(folders)
-for mailbox in mailboxes:
-    imap_socket.Examine(mailbox)
-# imap_socket.Select('INBOX')
+# mailboxes, folders = imap_socket.Get_All_MailBoxes()
+# print(mailboxes)
+# print(folders)
+# for mailbox in mailboxes:
+#     imap_socket.Examine(mailbox)
+imap_socket.Examine('INBOX')
+# imap_socket.Status('INBOX')
+# imap_socket.Noop()
+# imap_socket.close_mailbox() 
+imap_socket.fetch_mail_header(1, 5)
 imap_socket.Logout()
 imap_socket.close_connection()
 
@@ -234,7 +299,7 @@ r'''
 
 
 '''
-def capability(self):
+    def capability(self):
         code, response = self.send_cmd(self.CAPABILITY_CMD)
         print(f'capability response: {response}')
         if code != 'OK':
