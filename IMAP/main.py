@@ -199,13 +199,39 @@ class IMAP:
         print(f'CLOSE Response: {response}')
         if code != 'OK':
             raise Exception('__CLOSE Error__')
-    
-    def fetch_mail_header(self, start_index, total):
-        cmd = f'a225 FETCH {start_index}:{start_index + total - 1} (FLAGS BODY[HEADER.FIELDS (DATE FROM)])'
+
+    def fetch_complete_mail(self, start_index):
+        cmd = f'a225 FETCH {start_index}:{start_index+1} (FLAGS BODY[])'
         code, response = self.Send_CMD(cmd)
-        print(f'FETCH response: {response}')
+        # print(f'FETCH response:\n {response}')
+        file = open('sent-mail-1.txt', 'w+')
+        file.write(response)
+        file.close()
         if code != 'OK':
             raise Exception('__FETCH Error__')
+
+
+    def fetch_mail_header(self, start_index, count):
+        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (FLAGS BODY.PEEK[HEADER])'
+        code, response = self.Send_CMD(cmd)
+        print(f'FETCH response:\n {response}')
+        if code != 'OK':
+            raise Exception('__FETCH Error__')
+
+        '''
+            HEADER
+             * 1 FETCH (FLAGS (\Seen) BODY[HEADER] {665}
+            Return-Path: <pathadetushar2@gmail.com>
+            Received: from [127.0.1.1] ([117.233.122.76]) by smtp.googlemail.com with
+            ESMTPSA id c21sm3429394pfo.91.2021.04.11.00.31.34 for
+            <tusharpathade475@gmail.com> (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384
+            bits=256/256); Sun, 11 Apr 2021 00:31:36 -0700 (PDT)
+            From: pathadetushar2@gmail.com
+            X-Google-Original-From: noreply@demo.com
+            Content-Type: text/plain; charset="utf-8"
+            MIME-Version: 1.0
+            Content-Transfer-Encoding: 7ba225 OK Success
+        '''
 
     ''' Any State Functions '''
 
@@ -233,11 +259,11 @@ imap_socket = IMAP()
 # print(folders)
 # for mailbox in mailboxes:
 #     imap_socket.Examine(mailbox)
-imap_socket.Examine('INBOX')
+imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
 # imap_socket.Noop()
 # imap_socket.close_mailbox() 
-imap_socket.fetch_mail_header(1, 5)
+imap_socket.fetch_mail_header(1, 1)
 imap_socket.Logout()
 imap_socket.close_connection()
 
@@ -406,4 +432,36 @@ LAST Response
 
     Disconnected...
 
+'''
+
+
+'''
+    INBOX
+    EXAMINE response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
+    * OK [PERMANENTFLAGS ()] Flags permitted.
+    * OK [UIDVALIDITY 1] UIDs valid.
+    * 65 EXISTS
+    * 0 RECENT
+    * OK [UIDNEXT 66] Predicted next UID.
+    * OK [HIGHESTMODSEQ 24096]
+    a004 OK [READ-ONLY] INBOX selected. (Success)
+
+    FETCH response:
+    * 53 FETCH (FLAGS (\Seen) BODY[HEADER.FIELDS (DATE FROM)] {87}
+    Date: Thu, 08 Jul 2021 10:40:14 +0000
+    From: Rathina from Crio.Do <rathina@crio.in>
+
+    )
+    * 54 FETCH (FLAGS (\Seen) BODY[HEADER.FIELDS (DATE FROM)] {87}
+    Date: Fri, 09 Jul 2021 04:35:08 +0000
+    From: Rathina from Crio.Do <rathina@crio.in>
+
+    )
+    * 55 FETCH (FLAGS (\Seen) BODY[HEADER.FIELDS (DATE FROM)] {87}
+    Date: Fri, 09 Jul 2021 04:39:06 +0000
+    From: Rathina from Crio.Do <rathina@crio.in>
+
+    )
+    * 56 FETCH (FLAGS (\Seen) BODY[HEADER.FIELDS (DATE Fa225 OK Success
+    Logout Successfully!
 '''
