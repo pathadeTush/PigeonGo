@@ -204,15 +204,14 @@ class IMAP:
         cmd = f'a225 FETCH {start_index}:{start_index+1} (FLAGS BODY[])'
         code, response = self.Send_CMD(cmd)
         # print(f'FETCH response:\n {response}')
-        file = open('sent-mail-1.txt', 'w+')
+        file = open('inbox-1.txt', 'w+')
         file.write(response)
         file.close()
         if code != 'OK':
-            raise Exception('__FETCH Error__')
-
+            raise Exception('__FETCH Complete Mail Error__')
 
     def fetch_mail_header(self, start_index, count):
-        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (FLAGS BODY.PEEK[HEADER])'
+        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (FLAGS BODY])'
         code, response = self.Send_CMD(cmd)
         print(f'FETCH response:\n {response}')
         if code != 'OK':
@@ -232,6 +231,37 @@ class IMAP:
             MIME-Version: 1.0
             Content-Transfer-Encoding: 7ba225 OK Success
         '''
+
+    def fetch_mail_body_structure(self, start_index, count = 1):
+        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (BODYSTRUCTURE)'
+        code, response = self.Send_CMD(cmd)
+        print(f'FETCH Body Structure response:\n {response}')
+        if code != 'OK':
+            raise Exception('__FETCH Body Structure Error__')
+
+        '''
+            INBOX
+            EXAMINE response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
+            * OK [PERMANENTFLAGS ()] Flags permitted.
+            * OK [UIDVALIDITY 1] UIDs valid.
+            * 65 EXISTS
+            * 0 RECENT
+            * OK [UIDNEXT 66] Predicted next UID.
+            * OK [HIGHESTMODSEQ 25029]
+            a004 OK [READ-ONLY] INBOX selected. (Success)
+
+            FETCH Body Structure response:
+            * 1 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") NIL NIL "BASE64" 4564 92 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "QUOTED-PRINTABLE" 38967 780 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "00000000000092f1030589e24b62") NIL NIL))a225 OK Success
+            CLOSE Response: a012 OK Returned to authenticated state. (Success)
+        '''
+
+    def fetch_mail_body_text(self, start_index, count = 1):
+        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (FLAGS BODY[TEXT])'
+        code, response = self.Send_CMD(cmd)
+        print(f'FETCH Body Text response:\n {response}')
+        if code != 'OK':
+            raise Exception('__FETCH Body Text Error__')
+
 
     ''' Any State Functions '''
 
@@ -259,11 +289,15 @@ imap_socket = IMAP()
 # print(folders)
 # for mailbox in mailboxes:
 #     imap_socket.Examine(mailbox)
+# imap_socket.Examine('INBOX')
 imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
-# imap_socket.Noop()
-# imap_socket.close_mailbox() 
-imap_socket.fetch_mail_header(1, 1)
+# imap_socket.Noop() 
+# imap_socket.fetch_complete_mail(1)
+# imap_socket.fetch_mail_header(1, 1)
+# imap_socket.fetch_mail_body_structure(1)
+imap_socket.fetch_mail_body_text(1)
+imap_socket.close_mailbox()
 imap_socket.Logout()
 imap_socket.close_connection()
 
