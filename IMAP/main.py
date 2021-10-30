@@ -81,6 +81,7 @@ class IMAP:
 
     ''' Not Authenticated Functions '''
 
+    #  Reference: https://docs.python.org/3/library/ssl.html
     def SSL_Wrapper(self):
         context = ssl.create_default_context()
         self.__socket = context.wrap_socket(self.__socket, server_hostname=self.HOST)
@@ -178,8 +179,8 @@ class IMAP:
     def Examine(self, mailbox):
         EXAMINE_CMD = f'a004 EXAMINE {mailbox}'
         code, response = self.Send_CMD(EXAMINE_CMD)
-        print(mailbox)
-        print(f'EXAMINE response: {response}\n')
+        print(f'{mailbox} mailbox selected for read only access')
+        # print(f'EXAMINE response: {response}\n')
         if code != 'OK':
             raise Exception('__EXAMINE Error__')
 
@@ -204,6 +205,29 @@ class IMAP:
         cmd = f'a225 FETCH {start_index}:{start_index+1} (FLAGS BODY[])'
         code, response = self.Send_CMD(cmd)
         # print(f'FETCH response:\n {response}')
+        header = {}
+        body = ''
+        is_blankline_appeared = False 
+        for line in response.splitlines():
+            if len(line) == 0:
+                is_blankline_appeared = True
+            elif line.startswith(')'):
+                is_blankline_appeared = False
+            elif is_blankline_appeared:
+                body += line + '\n'
+            elif line.startswith('From:'):
+                header['From'] = line[6:]
+            elif line.startswith('To:'):
+                header['To'] = line[4:]
+            elif line.startswith('Date:'):
+                header['Date'] = line[6:]
+            elif line.startswith('Subject:'):
+                header['Subject'] = line[9:]
+
+        print(header)
+        print()
+        print(body)
+
         file = open('inbox-1.txt', 'w+')
         file.write(response)
         file.close()
@@ -211,7 +235,7 @@ class IMAP:
             raise Exception('__FETCH Complete Mail Error__')
 
     def fetch_mail_header(self, start_index, count):
-        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (FLAGS BODY])'
+        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (BODY.PEEK[HEADER])'
         code, response = self.Send_CMD(cmd)
         print(f'FETCH response:\n {response}')
         if code != 'OK':
@@ -289,14 +313,12 @@ imap_socket = IMAP()
 # print(folders)
 # for mailbox in mailboxes:
 #     imap_socket.Examine(mailbox)
-# imap_socket.Examine('INBOX')
-imap_socket.Examine('"[Gmail]/Sent Mail"')
+imap_socket.Examine('INBOX')
+# imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
 # imap_socket.Noop() 
-# imap_socket.fetch_complete_mail(1)
+imap_socket.fetch_complete_mail(1)
 # imap_socket.fetch_mail_header(1, 1)
-# imap_socket.fetch_mail_body_structure(1)
-imap_socket.fetch_mail_body_text(1)
 imap_socket.close_mailbox()
 imap_socket.Logout()
 imap_socket.close_connection()

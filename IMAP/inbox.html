@@ -1,0 +1,1304 @@
+<!-- * 1 FETCH (FLAGS (\Seen) BODY[] {49012}
+Delivered-To: pathadetushar2@gmail.com
+Received: by 2002:a17:907:110b:0:0:0:0 with SMTP id qu11csp6375298ejb;
+Mon, 27 May 2019 10:58:43 -0700 (PDT)
+X-Received: by 2002:ae9:f303:: with SMTP id p3mr11685949qkg.267.1558979923382;
+Mon, 27 May 2019 10:58:43 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1558979923; cv=none;
+d=google.com; s=arc-20160816;
+b=MAMX9FSQOyv/XEQ+XqFjQRS3vUOJsO574hB/zbYpMBk3s3UIoTBWBLrGoKuKTAkh6s
+8jtccCDDfZx+cnkjj3I/46FSKebtacFlHk9JC6dr28SsmeeWAH4ICk2s+s8uo2nixe6S
+ZcrFZfnZmE62QJqkz3Io445eU3AfiAqcajY3a1rsfaTlHhhF6lUe2m9R0Ms55OW3GDin
+RIR6MrmN7rnoftcX4r04fRlvyR9ki4cKxC3sWQHOYDs+4AhG+8B4+xwwmP8wjY9M4FRh
+ZbXvXE6VXDgS5Qw5Fp0TOL1DIRl3rXtVpVtI62Qsp44/A6DzK2evoCOWT53+T14p5Nef
+IljQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+h=to:from:subject:message-id:feedback-id:reply-to:date:mime-version
+:dkim-signature;
+bh=UrsGEs6tZHtBnEdiAK8HbzOV/iBS5Rz9A2Il1vWB2yo=;
+b=YRnUURVwN1QC3B3GfMpAvtqpfwrks1evHCzdlOR+0oKaze0HNx83gfBxvb2KKMtXP8
+Kzs5tPgZdFVkjUv69dVxpaugupMhtKcm3JvUeE5t4wnBMo2qDqabmK6WZG1VYtCPNEs2
+2+5Mwn3B68mTRC0qM4mg80Aj3omIxQMmB5eGq8MeCqlsDf3wzxjmwHFvtrpaPX147VPN
+FtlCHA/kJmLU79S0+3G5fu6HVXZAERO4fxfyT8sWodjcrQ/+HRojWIvd7woQrXUoncft
+KrJIgMTS4kcbVr9l6j0teAwXZ6OYy/sgNHOiLesFODvLmzdyDIg7e/G8RmNXVHKZMeMy
+V5gQ==
+ARC-Authentication-Results: i=1; mx.google.m;
+dkim=pass header.i=@google.com header.s=20161025 header.b=XQ+WId06;
+spf=pass (google.com: domain of 3qyxsxbskacwowwotmkwuucvqbgbmiu-vwzmxtgowwotm.kwu@scoutcamp.bounces.google.com
+designates 209.85.220.69 as permitted sender)
+smtp.mailfrom=3QyXsXBsKACwOWWOTMKWUUcVQbgbMIU-VWZMXTgOWWOTM.KWU@scoutcamp.bounces.google.com;
+dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=google.com
+Return-Path: <3QyXsXBsKACwOWWOTMKWUUcVQbgbMIU-VWZMXTgOWWOTM.KWU@scoutcamp.bounces.google.com>
+   Received: from mail-sor-f69.google.com (mail-sor-f69.google.com. [209.85.220.69])
+   by mx.google.com with SMTPS id h19sor6026283qkg.58.2019.05.27.10.58.27
+   for <pathadetushar2@gmail.com>
+      (Google Transport Security);
+      Mon, 27 May 2019 10:58:43 -0700 (PDT)
+      Received-SPF: pass (google.com: domain of
+      3qyxsxbskacwowwotmkwuucvqbgbmiu-vwzmxtgowwotm.kwu@scoutcamp.bounces.google.com designates 209.85.220.69 as
+      permitted sender) client-ip=209.85.220.69;
+      Authentication-Results: mx.google.com;
+      dkim=pass header.i=@google.com header.s=20161025 header.b=XQ+WId06;
+      spf=pass (google.com: domain of 3qyxsxbskacwowwotmkwuucvqbgbmiu-vwzmxtgowwotm.kwu@scoutcamp.bounces.google.com
+      designates 209.85.220.69 as permitted sender)
+      smtp.mailfrom=3QyXsXBsKACwOWWOTMKWUUcVQbgbMIU-VWZMXTgOWWOTM.KWU@scoutcamp.bounces.google.com;
+      dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=google.com
+      DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+      d=google.com; s=20161025;
+      h=mime-version:date:reply-to:feedback-id:message-id:subject:from:to;
+      bh=UrsGEs6tZHtBnEdiAK8HbzOV/iBS5Rz9A2Il1vWB2yo=;
+      b=XQ+WId06ABoKO9YmyXpz3kylLwCD0sg+LnmSMgcZvwpu2y/phQ7Wgx0NaqRMZXc6BZ
+      tQM1dO5sXPJaad6O2O6YB1QlFGuw2G8gCTMYELN8YYqFU0c9tYMuFCOIgMzXlq0uk6Pf
+      Vi+X+Hry5ZPB/NNmt/tJ7EUC9mmb1P974gkFA8tMS2HdIzJo+FOdJiXfAeRsjsYNOHUq
+      XWmmth1DXrVp1Fo9NFfqh2Js2/tbae+yMq1GrA1jHheiU5yrFTM4QRM9dUtNWp8QSYYc
+      yrYOgDeDKnwgzU+R/TnJ6wO6ZPZlIDgnM25wgzio5b3fOlvtgUm1WcITMiQsygt9lgew
+      8WxA==
+      X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+      d=1e100.net; s=20161025;
+      h=x-gm-message-state:mime-version:date:reply-to:feedback-id
+      :message-id:subject:from:to;
+      bh=UrsGEs6tZHtBnEdiAK8HbzOV/iBS5Rz9A2Il1vWB2yo=;
+      b=VZ+7aSyYBPruYPa6543q8BbOJOgPBfS1zipNHhZcbEDh5k3W5mEwpWGwRYOAW1NCyy
+      eVFw+T/ZxYCTkR93e3n6E+Kp1ZsXm8zekaTLpOFADX1YsMrBddbrp+zSaduxzL8UIhrh
+      VcEiqz7KjU+aJZwrM9rIGCPwLCP5z02LY1pJF8a9reETvHBARpWrXPEh8W2QwQFrj4Nl
+      x+tgUSy9lpSfyfIPgrHmGmEa3iP8gi9tNcBMiES4lJaRzXQ3xPs+uqTk1WXXmZ5P4b6/
+      YpXyeaYltPYxIEEG7xi9hg4s6LdMgKW1Wew7EFF6RKbtYIpdJrx7hm8asB9HoaSPezJR
+      NnKw==
+      X-Gm-Message-State: APjAAAWfNlL/KjKhRnKnuZpUu2p77CTWoRAMCpXK5IUuFEcVVrc5iyZw
+      8TxIRBBw9gkARSI=
+      X-Google-Smtp-Source: APXvYqxA+7vHzFBtfKT7nSfHpz/1QI0YEpN3g82kcDGId3KcTNxdMqGBya4Z5A8KMgxBPrvUQoGU12k=
+      MIME-Version: 1.0
+      X-Received: by 2002:a05:620a:12ef:: with SMTP id f15mr2775302qkl.340.1558979907088;
+      Mon, 27 May 2019 10:58Encoding: quoted-printable -->
+
+<!doctype html public "- / /w3c / /dtd xhtml 1.0 transitional / /en" "http:=
+ / /www.w3.org /tr /xhtml1 /dtd /xhtml1-transitional.dtd">
+<html xmlns=3Dhttp://www.w3.org/1999/xhtml xmlns:v=3Durn:schemas-microsof=t-com:vml
+  xmlns:o=3Durn:schemas-microsoft-com:office:office>
+
+<head>
+   <meta name=3Dformat-detection content=3Daddress=3Dno>
+   <meta name=3Dformat-detection content=3Dtelephone=3Dno>
+   <meta name=3Dx-apple-disable-message-reformatting>
+   <meta http-equiv=3DContent-Type content=3D"text/html; charset=3Dutf-8=">
+      <meta name=3Dviewport content=3D" width=3Ddevice-width, initial-scale==3D1, maximum-scale=3D1">
+   <link href=3D//fonts.googleapis.com/css?family=3DGoogle+Sans rel=3Dst=ylesheet type=3Dtext/css>
+   <style type=3Dtext/css>
+      body {
+         text-decoration: none;
+      }
+   </style>
+   <style type=3Dtext/css>
+      @media only screen and (max-width: 767px) {
+         .body_wrapper {
+            min-width: 540px !important;
+         }
+
+         .body_size {
+            width: 320px !important;
+            min-width: 320px !important;
+         }
+
+         .subheadline {
+            font-size: 22px !important;
+            line-height: 35px !important;
+         }
+
+         .device_txt {
+            font-size: 26px !important;
+         }
+
+         .greeting_name {
+            font-size: 32px !important;
+         }
+
+         .google_mobile {
+            width: 135px !important;
+            height: 43px !important;
+
+         }
+
+         .bulb_mobile {
+            width: 22px !important;
+            height: 31px !important;
+            padding-top: 20px !important;
+         }
+
+         .module_mobile {
+            width: 110px !important;
+            height: 110px !important;
+         }
+
+         .shield_mobile {
+            width: 24px !important;
+            height: 31px !important;
+         }
+
+         .fmd_mobile {
+            width: 30px !important;
+            height: 24px !important;
+         }
+
+         .fa_mobile {
+            width: 30px !important;
+            height: 30px !important;
+         }
+
+         20 .btn_mod2_mobile1 {
+            padding: 9px 24px 11px 24px !important;
+            border-radius: 4px !important;
+         }
+
+         .btn_mod2_mobile2 {
+            padding: 9px 24px 11px 24px !important;
+            border-radius: 4px !important;
+         }
+
+         .btn_mod3_mobile {
+            padding: 9px 24px 11px 24px !important;
+            border-radius: 4px !important;
+         }
+
+         .btn_mod4_mobile {
+            padding: 9px 24px 11px 24px !important;
+            border-radius: 4px !important;
+         }
+
+         .space1 {
+            height: 19px !important;
+         }
+
+         .space2 {
+            padding: 3px 35px 0 35px !important;
+         }
+
+         .space3 {
+            padding-top: 22px !important;
+         }
+
+         .space4 {
+            padding: 6px 0 0 0 !important;
+         }
+
+         .space5 {
+            padding-top: 17px !important;
+         }
+
+         .space6 {
+            padding: 0 35px 0 35px !important;
+         }
+
+         .space7 {
+            padding-right: 0px !important;
+         }
+      }
+
+      20 @media screen and (min-resolution: 288dpi) {
+         .device_txt {
+            font-size: 26px !important;
+         }
+      }
+   </style>
+   <!--[if gte mso 9]>
+<xml>
+    <o:OfficeDocumentSettings>
+    <o:AllowPNG/>
+    <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+</xml>
+<![endif]-->
+</head>
+20
+20
+20
+20
+20
+
+<body bgcolor=3D#ffffff class=3Dbody_wrapper>
+   <style>
+      @media screen {
+         @font-face {
+            font-family: 'Open Sans';
+            font-style: norma=l;
+            font-weight: normal;
+            src: local('Open Sans Light'), local('OpenSans-Light'), url(http: //fonts.gstatic.com/s/opensans/v9/DXI1ORHCpsQm3Vp6mXoaTRampu5_7CjHW=
+ 5spxoeN3Vs.woff2) format('woff2'), url(http://fonts.gstatic.com/s/opensans/v=
+9/DXI1ORHCpsQm3Vp6mXoaTaRDOzjiPcYnFooOUGCOsRk.woff) format('woff')
+         }
+      }
+
+      /*body{padding:0;margin:0}@media only screen and (max-width:520px=
+){-webkit-text-size-adjust:100%}*/
+      body {
+         text-decoration: none;
+      }
+   </style>
+   <div style="font-size: 0px; line-height:0px; color: #ffffff; display: none;">=C2=A0 =C2=A0 =C2=A0 =C2=A0
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
+      =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =
+      =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+      =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+      =C2=A0=C2=A0 =C2=A0 </div>
+   =20
+   <center>
+      <table class=3Dbody_size border=3D0 cellspacing=3D0 cellpadding=3D0=align=3Dcenter width=3D520 bgcolor=3D#ffffff
+        style=3D"background: #ffffff;=min-width: 520px; -webkit-font-smoothing: antialiased; -webkit-text-size-a=djust:
+        none;
+        -ms-text8s=PBI981DcdP56_nUGzupaj9z9VTkXyzmuvOByoDwAgU18N_1B0M6Z1uaDqQbDG0EsH4PJPRXbPqv=VZh1PCwVhjfa-icpj6D2qTXoMGQr3ob6L9dKvzmFRg-5JzoKDRG890w
+        target=3D_blank>
+         <im= g class=3Dgoogle_mobile width=3D82 height=3D26 border=3D0
+           src=3Dhttps://ser=vices.google.com/fh/files/emails/google_logo_orig.png alt=3DGoogle
+           style=3D="width: 82px; height:26px; text-align: center; border: none;"></a></td>
+            </tr=>
+            <tr>
+               <td class=3Dspace1 height=3D15></td>
+            </tr>
+            <tr>
+               <td width=3D480 style=3D"-webkit-font-smoothing: antialiased; -=webkit-text-size-adjust: none;
+                 -ms-text-size-adjust: 100%; border: 2px soli=d #E8EAED; border-radius: 16px;">
+                  <table border=3D0 cellspacing=3D0 cellpadding=3D0 width=3D100=%>
+                     <tr>
+                        <td align=3Dcenter> <a href=3D# style=3D"pointer-events:=none; cursor: default" ;><img
+                                class=3Dtop_img width=3D100% height=3D109 bo=rder=3D0
+                                src=3Dhttps://services.google.com/fh/files/emails/topdesign.png st=yle=3D"width: 100%;
+                                height: 109px; text-align: center; border: none;"></a>
+                        </td>
+                     </tr>
+                     <tr>
+                        <td>
+                           <table border=3D0 cellspacing=3D0 cellpadding=3D0 align=3Dcenter=width=3D100%>
+                              <tr>
+                                 <!--[if mso]>
+                        <td align=3D"center" class=3D"greeting_name space6"=
+ style=3D'color:#202124; font-family:Google Sans, "Roboto", Arial; font-siz=
+e:22px; font-weight:normal; line-height:45px; margin:0; padding:0 80px 20px=
+ 80px; text-align:center;word-break:normal;direction:ltr;' dir=3D"ltr">Hi t=
+ushar,</td>
+                        <![endif]-->
+                                 <!--[if !mso]><!-->
+                                 <td align=3Dcenter class=3D"greeting_name space6" s=tyle=3D"color:#202124;
+                                   font-family:Google Sans, &quot;Roboto&quot;, Arial;=font-size:22px;
+                                   font-weight:normal; line-height:45px; margin:0; padding:0 8=0px 0 80px;
+                                   text-align:center; word-break:normal;direction:ltr;" dir=3Dltr>=
+                                    Hi tushar,</td>
+                                 <!--<![endif]-->
+                              </tr>
+                              <!--[if !mso]><!-->
+                              <tr>
+                                 <td height=3D15 style=3D"line-height: 4px; font-siz=e: 4px;"></td>
+                              </tr>
+                              <!--<![endif]-->
+                              <tr>
+                                 <td class=3D"subheadline space2" align=3Dcenter sty=le=3D"color:#3C4043;
+                                   font-family:&quot;Roboto&quot;, OpenSans, &quot;Open S=ans&quot;, Arial, sans-serif;
+                                   font-size:16px; font-weight:normal; line-heig=ht:24px; margin:0; padding:0 70px 0
+                                   70px; text-align:center; word-break:nor=mal;direction:ltr;" dir=3Dltr> Welcome to
+                                    Google. Your new account comes wi=
+                                    th access to Google products, apps, and services.</td>
+                              </tr>
+                              <tr>
+                                 <td class=3D"subheadline space6" align=3Dcenter sty=le=3D"color:#3C4043;
+                                   font-family:&quot;Roboto&quot;, OpenSans, &quot;Open S=ans&quot;, Arial, sans-serif;
+                                   font-size:16px; font-weight:normal; line-heig=ht:24px; margin:0; padding:0 80px 0
+                                   80px; text-align:center; word-break:nor=mal;direction:ltr;" dir=3Dltr> Here are a few
+                                    tips to get you started.</td>
+                              </tr>
+                              <tr>
+                                 <td height=3D45></td>
+                              </tr>
+                           </table>
+                        </td>
+                     </tr>
+                     =20
+                     <tr>
+                        <td>
+                           <table border=3D0 cellspacing=3D0 cellpadding=3D0 align==3Dcenter width=3D100%>
+                              <tr>
+                                 <td height=3D45></td>
+                              </tr>
+                              <tr>
+                                 <td class=3Dspace3 align=3Dcenter> <img class==3Dmodule_mobile width=3D64 height=3D64
+                                      border=3D0 src=3Dhttps://services.g=oogle.com/fh/files/emails/g_logo1.png
+                                      alt=3D"Google Go" style=3D"width: 64p=x; height:64px; text-align: center; border:
+                                      none; font-size:9px;">
+                                 </td>
+                              </tr>
+                              <tr>
+                                 <td height=3D17></td>
+                              </tr>
+                              <tr>
+
+                                 <!--[if mso]>
+                            <td align=3D"center" class=3D"device_txt space6=
+" style=3D'color:#202124; font-family:Google Sans, "Roboto", Arial; font-si=
+ze:18px; font-weight:normal; line-height:33px; margin:0; padding:0 80px 20p=
+x 80px; text-align:center; word-break:normal;direction:ltr;' dir=3D"ltr">Ge=
+t a lighter, faster way to search</td>
+                            <![es and save time by using your voice.</td>
+                         =20
+                      </tr>
+                      <tr><td height=3D30></td></tr>
+                      <tr>
+                        <td align=3Dcenter valign=3Dtop>
+                            <table border=3D0 cellspacing=3D0 cellpadding=
+=3D0 width=3D100%>
+                                <tr>
+                                    <td class=3Dspace4 style=3D"text-align:=
+ center; padding: 0;">
+                                     =20
+                                        <div>
+                                            <!--[if mso]>
+                                              <v:roundrect xmlns:v=3D"urn:s=
+chemas-microsoft-com:vml" xmlns:w=3D"urn:schemas-microsoft-com:office:word"=
+ href=3D"https://www.google.com/appserve/mkt/p/AFnwnKUS8t13KW59PJ-mpOSHxTR-=
+AgdKHEHyvSfyCJydDWWFcyO1IlGUHmDTTAUb7LSwnyV78lZKX4zONhPpfLUkLAgXWhfyjFZjY3g=
+kWpa-q0rVVgaaTDBqtw6USs0kVvQxVbvEzFFFUkXI0P9hloYu2KrFwOl0ojuASSgL5mLezbKi_R=
+XGt6xfL3GCbJI4KGk2Dg1asLFFIwlFacZZemQvTkMcNHS68XStrAy-s9FNXj84OADY-Fo8-kVxP=
+OWuwba_GHEp8PpRy3PvKDaoyMAZtRWVhprsw6bjmA4Y8bI7Li7T" style=3D"height:42px; =
+v-text-anchor:middle; width:161;" arcsize=3D"10%" strokecolor=3D"#1A73E8" f=
+illcolor=3D"#1A73E8;">
+                                              <w:anchorlock/>
+                                              <center style=3D"color:#fffff=
+f;font-family:Google Sans, Roboto, Arial; font-size:16px; font-weight:norma=
+l; word-break:normal;direction:ltr;" dir=3D"ltr">Get Google Go</center>
+                                              </v:roundrect>
+                                            <![endif]-->
+                                 <a href=3Dhttps://www.google.co=m/appserve/mkt/p/AFnwnKUS8t13KW59PJ-mpOSHxTR-AgdKHEHyvSfyCJydDWWFcyO1IlGUHm=DTTAUb7LSwnyV78lZKX4zONhPpfLUkLAgXWhfyjFZjY3gkWpa-q0rVVgaaTDBqtw6USs0kVvQxV=bvEzFFFUkXI0P9hloYu2KrFwOl0ojuASSgL5mLezbKi_RXGt6xfL3GCbJI4KGk2Dg1asLFFIwlF=acZZemQvTkMcNHS68XStrAy-s9FNXj84OADY-Fo8-kVxPOWuwba_GHEp8PpRy3PvKDaoyMAZtRW=Vhprsw6bjmA4Y8bI7Li7T
+                                   class=3D"subheadline btn_mod2_mobile2" target=3D_blan=k
+                                   style=3D"background-color:#1A73E8;; border:1px solid #1A73E8; border-radi=us:4px;
+                                   color:#ffffff; display:inline-block; font-family:Google Sans, Robot=o, Arial;
+                                   font-size:16px; line-height:25px; text-decoration:none; padding:7=px 24px 7px 24px;
+                                   -webkit-text-size-adjust:none; mso-hide:all; font-weight:=500; text-align: center;
+                                   word-break:normal;direction:ltr;" dir=3Dltr>Get Go=
+                                    ogle Go</a>
+                                 </div>
+                                 =20
+                        </td>
+                     </tr>
+                  </table>
+               </td>
+            </tr>
+            =20
+            <tr>
+               <td height=3D50></td>
+            </tr>
+            <tr>
+               <td border=3D0>
+                  <hr width=3D516 bgcolor=3D#F8F9FA=border=3D0 style=3D"margin:0; border-collapse: collapse;
+                    background-color:=#F8F9FA;color: #F8F9FA; height: 8px; border: none; width:516px;">
+               </td>
+            </tr>
+      </table>
+      </td>
+      </tr>
+      =20
+
+      =20
+      <tr>
+         <td>
+            <table border=3D0 cellspacing=3D0 cellpadding=3D0 align==3Dcenter width=3D100%>
+               <tr>
+                  <td height=3D40></td>
+               </tr>
+               <tr>
+                  <td align=3Dcenter> <img class=3Dmodule_mobile width==3D64 height=3D64 border=3D0
+                       src=3Dhttps://services.google.com/fh/files/ema=ils/more_logo.png alt=3D"" style=3D"width: 64px;
+                       height:64px; text-align: c=enter; border: none;">
+
+                  </td>
+               </tr>
+
+               <tr>
+                  <td height=3D15></td>
+               </tr>
+               <tr>
+
+                  <!--[if mso]>
+                        <td align=3D"center" class=3D"device_txt space6" st=
+yle=3D'color:#202124; font-family:Google Sans, "Roboto", Arial; font-size:1=
+8px; font-weight:normal; line-height:33px; margin:0; padding:0 80px 20px 80=
+px; text-align:center; word-break:normal;direction:ltr;' dir=3D"ltr">More f=
+rom Google</td>
+                        <![endif]-->
+                  <!--[if !mso]><!-->
+                  <td align=3Dcenter class=3D"device_txt space6" styl=e=3D"color:#202124; font-family:Google Sans,
+                    &quot;Roboto&quot;, Arial; fon=t-size:18px; font-weight:normal; line-height:33px; margin:0;
+                    padding:0 80px=0 80px; text-align:center; word-break:normal;direction:ltr;" dir=3Dltr>Mor=
+                     e from Google</td>
+                  <!--<![endif]-->
+               </tr>
+               <!--[if !mso]><!-->
+               <tr>
+                  <td height=3D15 style=3D"line-height: 4px; font-siz=e: 4px;"></td>
+               </tr>
+               <!--<![endif]-->
+               <tr>
+                  <td class=3D"subheadline space6" align=3Dcenter s=tyle=3D"color:#5F6368;
+                    font-family:&quot;Roboto&quot;, OpenSans, &quot;Open=Sans&quot;, Arial, sans-serif; font-size:16px;
+                    font-weight:normal; line-he=ight:24px; margin:0; padding:0 80px 0 80px; text-align:center;
+                    word-break:n=ormal;direction:ltr;" dir=3Dltr>Discover the latest apps from
+                     Google</td>
+               </tr>
+               <tr>
+                  <td height=3D30></td>
+               </tr>
+               <tr>
+                  <td align=3Dcenter valign=3Dtop>
+                     <table>
+                        <tr>
+                           <td style=3D"text-align: center; padd=ing: 0;">
+                              <div>
+                                 <!--[if mso]>
+                                              <v:roundrect xmlns:v=3D"urn:s=
+chemas-microsoft-com:vml" xmlns:w=3D"urn:schemas-microsoft-com:office:word"=
+ href=3D"https://www.google.com/appserve/mkt/p/AFnwnKUGxFwiNOCfnHA_C-DxcMLS=
+3IvYfSSJ7pdKfKqv8T4gONQk402Qo9NwpOoloxfiAt6REteek52NE43VzrHPReoiIULlRFmxXgX=
+o5IkJAGKlfTH_le3lqnAZCIbGRLQxThlEPm5WvaxtpCKlCISNkS9SCl3V4v0zCHg4sSwoR5a4GQ=
+DStiJNrj-Xf9tzh9C2jRDD6-0J8cMPJjOSOUY1xVkGveOz5Ojx5sPafYkFdRhSQ0_lQLIXAGAZp=
+aQUeHfep4h3vMTFvhsWsdtVZLOI3TK_EJRbgcKr1bm5xfHPsJIWnII4e3IengN63oFTYI_WT_E6=
+WnkRN-NyZ2s_KiR_W0w63tODiM-Hm8WpSdxOH4Z2jDfmiHhK38aBuXHhPgOdY_wTrWBh8CLY9lZ=
+15tf-_3CRoTH2KYNWQmtakfR_qBmLzcbbdvtZ4qoua22ZE9b1dWSUHCYIZfuxCpqcUZxK2K-2yA=
+9zrd7G0qZETfUvnWnB5cX4mOgMEkKXOJx3KSau1CX0i27xQCWWhq3cLJE2wktH74EROnHA-vBs2=
+yk30d1PSAgsOGztQ9fIZ69PqUwyzGWiI8cGToz9aK71wonNtKK7nqgHk_rEduQVdaMnhvugCRTG=
+CREr1PTsD6aFj6pGFZfCsG9ayCpmcxzu15Z1STXaU7H8xNcPQ7Y5gdmx9GUyTzDZ6V2yCk53a0j=
+3JMQI9EmfO4FdsR9vwWLCzCk-UzaNC9m1HuyS3irAnMJrmY__UsykPTLLxqbXmFUFZnldlAineB=
+sB3UE6XA5JUbygI1RM1qaMzDo" style=3D"height:38; v-text-anchor:middle; width:=
+222;" arcsize=3D"10%" strokecolor=3D"#1A73E8" fillcolor=3D"#1A73E8;">
+                                              <w:anchorlock/>
+                                              <center style=3D"color:#fffff=
+f;font-family:Google Sans, Roboto, Arial; font-sU7H8xNcPQ7Y5gdmx9GUyTzDZ6V2yCk53a0j3JMQI9EmfO4FdsR9vwWLCzCk-UzaNC=
+9m1HuyS3irAnMJrmY__UsykPTLLxqbXmFUFZnldlAineBsB3UE6XA5JUbygI1RM1qaMzDo clas=
+s=3D"subheadline btn_mod3_mobile" target=3D_blank style=3D"background-color=
+:#1A73E8;; border:1px solid #1A73E8; border-radius:4px; color:#ffffff; disp=
+lay:inline-block; font-family:Google Sans, Roboto, Arial; font-size:16px; l=
+ine-height:25px; text-decoration:none; padding:7px 24px 7px 24px; -webkit-t=
+ext-size-adjust:none; mso-hide:all; font-weight:500; text-align: center; wo=
+rd-break:normal;direction:ltr;" dir=3Dltr>More apps from Google</a>
+                                          </div>
+                                      </td>
+                                  </tr>
+                                <tr><td height=3D10></td></tr>
+                              </table>
+                          </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                  <tr><td height=3D50></td></tr>
+                      <tr><td border=3D0><hr width=3D516 border=3D0 bgcolor=
+=3D#F8F9FA style=3D"margin:0; border-collapse: collapse; background-color: =
+#F8F9FA;color: #F8F9FA; height: 8px; border: none; width:516px;"></td></tr>
+                <tr>
+                  <td>
+                    <table border=3D0 cellspacing=3D0 cellpadding=3D0 align=
+=3Dcenter width=3D100%>
+                      <tr><td height=3D40></td></tr>
+                      <tr>
+                        <td align=3Dcenter>    <img class=3Dmodule_mobile w=
+idth=3D64 height=3D64 border=3D0 src=3Dhttps://services.google.com/fh/files=
+/emails/security_logo.png alt=3DSecurity style=3D"width: 64px; height:64px;=
+ text-align: center; border: none;">
+</td>
+                      </tr>
+                      <tr><td height=3D15></td></tr>
+                      <tr>
+                        <!--[if mso]>
+                        <td align=3D"center" class=3D"device_txt space6" st=
+yle=3D'color:#202124; font-family:Google Sans, "Roboto", Arial; font-size:1=
+8px; font-weight:normal; line-height:33px; margin:0; padding:0 80px 20px 80=
+px; text-align:center; word-break:normal;direction:ltr;' dir=3D"ltr">Contro=
+l your account</td>
+                        <![endif]-->
+                                 <!--[if !mso]><!-->
+                           <td align=3Dcenter class=3D"device_txt space6" styl=e=3D"color:#202124; font-family:Google
+                             Sans, &quot;R:18px; font-weight:normal; line-height:33px; margin:0; padding:0 80px=0 80px;
+                             text-align:center; word-break:normal;direction:ltr;" dir=3Dltr>Con=
+                              trol your account</td>
+                           <!--<![endif]-->
+                        </tr>
+                        <!--[if !mso]><!-->
+                        <tr>
+                           <td height=3D15 style=3D"line-height: 4px; font-siz=e: 4px;"></td>
+                        </tr>
+                        <!--<![endif]-->
+                        <tr>
+                           <td class=3D"subheadline space6" align=3Dcenter sty=le=3D"color:#5F6368;
+                             font-family:&quot;Roboto&quot;, OpenSans, &quot;Open S=ans&quot;, Arial, sans-serif;
+                             font-size:16px; font-weight:normal; line-heig=ht:24px; margin:0; padding:0 80px 0 80px;
+                             text-align:center; word-break:nor=mal;direction:ltr;" dir=3Dltr>Choose
+                              what&#39;s right for you. Review and a=
+                              djust your privacy and security settings any time.</td>
+                        </tr>
+
+                        <tr>
+                           <td height=3D30></td>
+                        </tr>
+                        <tr>
+                           <td align=3Dcenter valign=3Dtop>
+                              <table>
+                                 <tr>
+                                    <td style=3D"text-align: center; padd=ing: 0;">
+                                       <div>
+                                          <!--[if mso]>
+                                                <v:roundrect xmlns:v=3D"urn=
+:schemas-microsoft-com:vml" xmlns:w=3D"urn:schemas-microsoft-com:office:wor=
+d" href=3D"https://www.google.com/appserve/mkt/p/AFnwnKU_xBVxbIJvRffIncoiIJ=
+7dh4NgEgYj-l7ZZVVZ1IbUugnHjS1y2JMYx5QAKxwA3gg40THKcM39LCyse62llqp8NO9y2Mplt=
+ngY1KkLVVrXLMVWI8lcAEZbsHUGck6P9mkwXiIw9Ybep62O8T3PP7LYucGaKF0AiNkWv7UEOZnH=
+x6iFAIiG5mP_aoO2Xxi9CIDW_egKQzwQMzM" style=3D"height:42px; v-text-anchor:mi=
+ddle; width:136;" arcsize=3D"10%" strokecolor=3D"#1A73E8" fillcolor=3D"#1A7=
+3E8;">
+                                                <w:anchorlock/>
+                                                <center style=3D"color:#fff=
+fff;font-family:Google Sans, Roboto, Arial; font-size:16px; font-weight:nor=
+mal; word-break:normal;direction:ltr;" dir=3D"ltr">My Account</center>
+                                                </v:roundrect>
+                                              <![endif]-->
+                                          <a href=3Dhttps://www.google.=com/appserve/mkt/p/AFnwnKU_xBVxbIJvRffIncoiIJ7dh4NgEgYj-l7ZZVVZ1IbUugnHjS1y=2JMYx5QAKxwA3gg40THKcM39LCyse62llqp8NO9y2MpltngY1KkLVVrXLMVWI8lcAEZbsHUGck6=P9mkwXiIw9Ybep62O8T3PP7LYucGaKF0AiNkWv7UEOZnHx6iFAIiG5mP_aoO2Xxi9CIDW_egKQz=wQMzM
+                                            class=3D"subheadline btn_mod4_mobile" target=3D_blank
+                                            style=3D"backgr=ound-color:#1A73E8;; border:1px solid #1A73E8;
+                                            border-radius:4px; color:#ff=ffff; display:inline-block; font-family:Google
+                                            Sans, Roboto, Arial; font-si=ze:16px; line-height:25px;
+                                            text-decoration:none; padding:7px 24px 7px
+                                            24px;=-webkit-text-size-adjust:none; mso-hide:all; font-weight:500;
+                                            text-align:=center; word-break:normal;direction:ltr;" dir=3Dltr>My
+                                             Account</a>
+                                       </div>
+                                       =20
+                                    </td>
+                                 </tr>
+                              </table>
+                           </td>
+                        </tr>
+                        =20
+                        <tr>
+                           <td height=3D50></td>
+                        </tr>
+                     </table>
+                  </td>
+               </tr>
+            </table>
+         </td>
+      </tr>
+      =20
+      =20
+      <tr>
+         <td height=3D24></td>
+      </tr>
+      =20
+      <tr>
+         <td width=3D480 style=3D"-webkit-font-smoothing: antialiased;=-webkit-text-size-adjust: none;
+           -ms-text-size-adjust: 100%; border: 2px so=lid #E8EAED; border-radius: 16px;">
+            <table border=3D0 cellspacing=3D0 cellpadding=3D0 width==3D100%>
+               <tr>
+                  <td style=3D"font-size:0pt; line-height:0pt=; padding:0; margin:0;" width=3D24></td>
+                  <!--[if mso]>
+                                <td style=3D"margin-top:9px; padding: 40px =
+25px 29px 20px;" valign=3D"top">    <img class=3D"fmd_mobile" width=3D"24" =
+height=3D"18" border=3D"0" src=3D"https://services.google.com/fh/files/emai=
+ls/vibration_outline.png" alt=3D"Find My Device" style=3D"width: 24px; heig=
+ht:18px; text-align: center; border: none; font-size:3px;">
+</td>
+                                <![endif]-->
+                  <!--[if !mso]><!-->
+                  <td style=3D"padding: 55px 10px 40px 20px;"=valign=3Dtop> <img class=3Dfmd_mobile width=3D24
+                       height=3D18 border=3D0=src=3Dhttps://services.google.com/fh/files/emails/vibration_outline.png
+                       al=t=3D"Find My Device" style=3D"width: 24px; height:18px; text-align: center;=border: none;
+                       font-size:3px;">
+                  </td>
+                  <!--<![endif]-->
+
+                  <td valign=3Dtop>
+                     <!--[if mso]>
+                                  <div class=3D"device_txt" style=3D"margin=
+-bottom:15px; padding-left: 20px; color:#202124; font-family:Google Sans, R=
+oboto, Arial; font-size:18px; line-height:28px; text-align:left; padding-to=
+p:30px; padding-bottom:12px; word-break:normal;direction:ltr;" dir=3D"ltr" =
+valign=3D"top">Find your phone</div>
+                                  <![endif]-->
+                     <!--[if !mso]><!-->
+                     <div class=3Ddevice_txt style=3D"padding-=left: 20px; color:#202124; font-family:Google Sans,
+                       Roboto, Arial; font-siz=e:18px; line-height:28px; text-align:left; padding-top:45px;
+                       padding-bottom=:12px; word-break:normal;direction:ltr;" dir=3Dltr valign=3Dtop>Find your p=
+                        hone</div>
+                     <!--<![endif]-->
+                     =20
+                     <!--[if mso]>
+                                  <div class=3D"subheadline space7" style=
+=3D"padding-left: 20px; padding-right: 20px; color:#80868B; font-family:Rob=
+oto, OpenSans, Open Sans, Arial, sans-serif; font-weight: normal; font-size=
+:16px; line-height:24px; text-align:left; padding-bottom:24px; word-break:n=
+ormal;direction:ltr;" dir=3D"ltr" valign=3D"top"><a href=3D"https://www.goo=
+gle.com/appserve/mkt/p/AFnwnKWaGMrVtTNAdHQMLmAxNmSlw5__afqcHQM900vwwx0qau2r=
+_qYKyM0IolD48-IaKr4X4jSzg1CLwOTEJKw0wePCdPiLYBapo6PYY7ptqV76fvBKpLn3SP6CWHY=
+LnXEklZZoyZLyop1M7LMVBEyKCprgrERV3Mumc3W1U_TOkryJJ6SPzHwmVkeLBGMX8JyDlhovAQ=
+" target=3D"_blank" style=3D"text-decoration:none; color:#4285F4;">Pinpoint=
+ your phone's location</a> and secure it with Find My Device.</div>
+                                  <![endif]-->
+                     <!--[if !mso]><!-->
+                     <div class=3D"subheadline space7" style==3D"padding-left: 20px; padding-right: 20px; color:#80868B;
+                       font-family:Rob=oto, OpenSans, Open Sans, Arial, sans-serif; font-weight: normal;
+                       font-size=:16px; line-height:24px; text-align:left; padding-bottom:35px;
+                       word-break:n=ormal;direction:ltr;" dir=3Dltr valign=3Dtop><a
+                          href=3Dhttps://www.google.c=om/appserve/mkt/p/AFnwnKWaGMrVtTNAdHQMLmAxNmSlw5__afqcHQM900vwwx0qau2r_qYKy=M0IolD48-IaKr4X4jSzg1CLwOTEJKw0wePCdPiLYBapo6PYY7ptqV76fvBKpLn3SP6CWHYLnXEk=lZZoyZLyop1M7LMVBEyKCprgrERV3Mumc3W1U_TOkryJJ6SPzHwmVkeLBGMX8JyDlhovAQ
+                          targ=et=3D_blank style=3D"text-decoration:none; color:#4285F4;">Pinpoint your ph=
+                           one&#39;s location</a> and secure it with Find My Device.</div>
+                     <!--<![endif]-->
+                  </td>
+                  <td style=3D"font-size:0pt; line-height:0pt=; padding:0; margin:0;" width=3D24></td>
+               </tr>
+               =20
+               <tr>
+                  <td style=3D"font-size:0pt; line-height:0pt=; padding:0; margin:0;" width=3D24></td>
+                  <!--[if mso]>
+                                <td colspan=3D"2" width=3D"468" align=3D"to=
+p" style=3D"width:468px;"><hr width=3D"468" style=3D"background-color: #E8E=
+AED;color: #E8EAED; height: 2px; border: none;font-size:0pt; line-height:0p=
+t; padding:0; margin:0; width:468px;"></td>
+                                <![endif]-->
+                  <!--[if !mso]><!-->
+                  <td colspan=3D2 align=3Dtop>
+                     <hr width=3D4=68 style=3D"background-color: #E8EAED;color: #E8EAED; height: 2px;
+                       border:=none;font-size:0pt; line-height:0pt; padding:0; margin:0;">
+                  </td>
+                  <!--<![endif]-->
+                  <td style=3D"font-size:0pt; line-height:0pt=; padding:0; margin:0;" width=3D24></td>
+               </tr>
+               <tr>
+                  <td style=3D"font-size:0pt; line-height:0pt=; padding:0; margin:0;" width=3D24></td>
+                  <!--[if mso]>
+                                <td style=3D"margin-bottom:67px; padding: 2=
+1px 10px 35px 20px;">    <img class=3D"fa_mobile" width=3D"24" height=3D"24=
+" border=3D"0" src=3D"https://services.google.com/fh/files/emails/help_outl=
+ine.png" alt=3D"Find Answers" style=3D"width: 24px; height:24px; text-align=
+: center; border: none; font-size:3px;">
+</td>
+                                <![endif]-->
+                  <!--[if !mso]><!-->
+                  <td style=3D"padding: 43px 10px 40px 20px;"=valign=3Dtop> <img class=3Dfa_mobile width=3D24
+                       height=3D24 border=3D0=src=3Dhttps://services.google.com/fh/files/emails/help_outline.png
+                       alt=3D"F=ind Answers" style=3D"width: 24px; height:24px; text-align: center; border:=none;
+                       font-size:3px;">
+                  </td>
+                  <!--<![endif]-->
+                  =20
+                  <td valign=3Dtop>
+                     <!--[if mso]>
+                                    <div class=3D"device_txt" style=3D"marg=
+in-bottom:15px; padding-left: 20px; color:#202124; font-family:Google Sans,=
+ Roboto, Arial; font-size:18px; line-height:28px; text-align:left; padding-=
+top:18px; padding-bottom:12px; word-break:normal;direction:ltr;" dir=3D"ltr=
+" valign=3D"top">Find answers</div>
+                                    <![endif]-->
+                     <!--[if !mso]><!-->
+                     <div class=3Ddevice_txt style=3D"paddin=g-left: 20px; color:#202124; font-family:Google Sans,
+                       Roboto, Arial; font-s=ize:18px; line-height:28px; text-align:left; padding-top:35px;
+                       padding-bott=om:12px; word-break:normal;direction:ltr;" dir=3Dltr valign=3Dtop>Find answ=
+                        ers</div>
+                     <!--<![endif]-->
+                     =20
+                     <!--[if mso]>
+                                    <div class=3D"subheadline space7" style=
+=3D"margin-bottom:20px; padding-left: 20px; padding-right: 20px; color:#808=
+68B; font-family:Roboto, OpenSans, Open Sans, Arial, sans-serif; font-weigh=
+t: normal; font-size:16px; line-height:24px; text-align:left; padding-botto=
+m:45px; word-break:normal;direction:ltr;" dir=3D"ltr" valign=3D"top">Visit =AjavYsSrVpKC=
+2ZBvEiUmcHPgetozdIue5sLzIvAiAsw3wE49vll6z_ApFn55yQ2OJCYXDPlFxWqxbnpYdMPXCKg=
+TWOUJY6-baRcZqVzZLItuW-5esjKGw" target=3D"_blank" style=3D"text-decoration:=
+none; color:#4285F4;">Help Center</a> to learn all about your new Google Ac=
+count.</div>
+                                    <![endif]-->
+                     <!--[if !mso]><!-->
+                     <div class=3D"subheadline space7" style==3D"padding-left: 20px; padding-right: 20px; color:#80868B;
+                       font-family:Rob=oto, OpenSans, Open Sans, Arial, sans-serif; font-weight: normal;
+                       font-size=:16px; line-height:24px; text-align:left; padding-bottom:50px;
+                       word-break:n=ormal;direction:ltr;" dir=3Dltr valign=3Dtop>Visit the <a
+                          href=3Dhttps://ww=w.google.com/appserve/mkt/p/AFnwnKUOCYrMlKa1_j9kWXyQIrkDQ8epaqMCWkR-uyNzS9H=Go8Njtiw__cmTVDrCngToHZBdblYDrNPTnn4vyAjavYsSrVpKC2ZBvEiUmcHPgetozdIue5sLzI=vAiAsw3wE49vll6z_ApFn55yQ2OJCYXDPlFxWqxbnpYdMPXCKgTWOUJY6-baRcZqVzZLItuW-5e=sjKGw
+                          target=3D_blank style=3D"text-decoration:none; color:#4285F4;">Help C=
+                           enter</a> to learn all about your new Google Account.</div>
+                     <!--<![endif]-->
+                  </td>
+                  <td style=3D"font-size:0pt; line-height:0pt=; padding:0; margin:0;" width=3D24></td>
+               </tr>
+            </table>
+         </td>
+      </tr>
+
+      =20
+      <tr>
+         <td style=3D"-webkit-font-smoothing: antialiased; -we=bkit-text-size-adjust: none; -ms-text-size-adjust:
+           100%;">
+            <table border=3D0 cellspacing=3D0 cellpadding=3D0 a=lign=3Dcenter width=3D100%>
+               <tr>
+                  <td height=3D32></td>
+               </tr>
+               <tr>
+                  <td class=3Dspace6 align=3Dcenter style=3D"colo=r:#5F6368; font-family:&quot;Roboto&quot;, OpenSans,
+                    &quot;Open Sans&quot;,=Arial, sans-serif; font-size:12px; line-height:17px; margin:0; padding:0
+                    8=0px 0 80px; text-align:center; word-break:normal;direction:ltr;" dir=3Dltr>=
+                     We hope you enjoy your new Android device,</td>
+                  F6368; font-family:&quot;Roboto&quot;, OpenSans, &quot;Open Sans&quot;,=
+                  Arial, sans-serif; font-size:12px; line-height:17px; margin:0; padding:0 8=
+                  0px 0 80px; text-align:center; word-break:normal;direction:ltr;" dir=3Dltr>=
+                  Google Community Team
+         </td>
+      </tr>
+      <tr>
+         <td height=3D30></td>
+      </tr>
+      <tr>
+         <td width=3D134 height=3D46 align=3Dcenter styl=e=3D"font-size:8px; word-break:normal;direction:ltr;"
+           dir=3Dltr> <img cl=ass=3Dgoogle_mobile width=3D82 height=3D26 border=3D0
+              src=3Dhttps://service=s.google.com/fh/files/emails/google_logo2.png alt=3D"Google Logo" style=3D"=width:
+              82px; height:26px; text-align: center; border: none;">
+         </td>
+      </tr>
+      <tr>
+         <td height=3D19></td>
+      </tr>
+      <tr>
+         <td class=3Dspace6 align=3Dcenter style=3D"colo=r:#5F6368; font-family:&quot;Roboto&quot;, OpenSans, &quot;Open
+           Sans&quot;,=Arial, sans-serif; font-size:12px; line-height:17px; margin:0; padding:0 8=0px 0 80px;
+           text-align:center; word-break:normal;direction:ltr;" dir=3Dltr>=
+            Replies to this email aren&#39;t monitored. If you have a question about yo=
+            ur new account, the Help Center likely has the answer you&#39;re looking fo=
+            r.</td>
+      </tr>
+      <tr>
+         <td height=3D19></td>
+      </tr>
+      <tr>
+         <td class=3Dspace6 valign=3Dmiddle style=3D"col=or:#777; font-family:&quot;Roboto&quot;, OpenSans, &quot;Open
+           Sans&quot;, A=rial, sans-serif; font-size:10px; line-height:14px; margin:0; padding:0 80p=x 0 80px;
+           text-align:center" align=3Dcenter>Google Asia Pacific Pte. Ltd.,<= br>70 Pasir Panjang Road,
+               #03-71,<br>Mapletree Business City, Singapore 117=
+               371<br><br><span style=3Dword-break:normal;direction:ltr; dir=3Dltr>This em=
+                  ail was sent to you because you created a Google account.</span></td>
+      </tr>
+      </table>
+      </td>
+      </tr>
+      <tr>
+         <td height=3D18></td>
+      </tr>
+      </table>
+      <div style=3D"display:none; white-space:nowrap; font:15px courier;=line-height:0;">
+         =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2)
+         * 2 FETCH (FLAGS () BODY[] {25806}
+         Delivered-To: pathadetushar2@gmail.com
+         Received: by 2002:a50:9a24:0:0:0:0:0 with SMTP id o33csp5053083edb;
+         Sat, 9 Nov 2019 22:52:39 -0800 (PST)
+         X-Received: by 2002:a92:dd8f:: with SMTP id g15mr455219iln.145.1573368758956;
+         Sat, 09 Nov 2019 22:52:38 -0800 (PST)
+         ARC-Seal: i=1; a=rsa-sha256; t=1573368758; cv=none;
+         d=google.com; s=arc-20160816;
+         b=c2LthFrdP2zPgtiZk75wHFrG9TbXcIWnXTBRGRhtPvcxlq+jGLD3p3PDcqCnSkZovW
+         TpPrYAp3Iq5WeicoQCMzTZj9Qc61OeTb6biyGlgHd2D2VXYQCA4jEiOto1SfiPl76BMm
+         VA1z41zwHCEksLyaafcc1HJZjrhRl/SsmAFrfUBMP7p3ALDlhhF0k0InDRKSoIBguwtg
+         eTz2cvze4On0hDQBNjIKQ/6+xDLC/3aP662O+uhJqOlaWhHImf+XxI2nXuF/hzCHrVpU
+         /gDym+PDCxiadB7Jyq9ZLTFDVXLL0wHzWChp+0OgupTp9ZVP8nu72KQX4cKmH6Wu04/j
+         AEWQ==
+         ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+         h=to:from:subject:message-id:date:mime-version:dkim-signature;
+         bh=u7Y4B6jL8v6Ekl6H2D+EnRtxiDrq3ZpoxA4+dr6xAyA=;
+         b=OLmISvnEdLrgsPvX+JTDB6My6n0ikwwEWlJbcG9ceaUoYhzX8GZnoDdwadPVs95tKQ
+         iyozXALHL/gPZVLw6SRq7e+xEFZ5RLoof7DM7IM2W8J12YAdo957E3fuIf3f7VzKqtOu
+         RTsXjn98EnfqjTiJ2pLZUZoj5b18wWmCacOdeDdZTumRKEbJII39lMkv0+fit94/Zi9j
+         OQ8FvtIvjsphzK3Vy4VnQR+AH4My/Zqq/zwWaN4oeqXUueo1AlrfZXhuP9IO03NoCufj
+         VtLf+ZGZKv0NS1VlOaV5OYzCJsyNCwwJ/Kt6liEKYIW1wCeGyS22r8UFRB4vGzLpo5Nv
+         04+w==
+         ARC-Authentication-Results: i=1; mx.google.com;
+         dkim=pass header.i=@youtube.com header.s=20161025 header.b=xNry1C8k;
+         spf=pass (google.com: domain of
+         3trphxqgldjeab-ercyllbhghor.pbzcngunqrghfuneptznvy.pbz@chime-notifications.bounces.google.com designates
+         209.85.220.69 as permitted sender)
+         smtp.mailfrom=3trPHXQgLDjEab-eRcYllbhghOR.PbZcNgUNQRghfUNepTZNVY.PbZ@chime-notifications.bounces.google.com;
+         dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=youtube.com
+         Return-Path:
+         <3trPHXQgLDjEab-eRcYllbhghOR.PbZcNgUNQRghfUNepTZNVY.PbZ@chime-notifications.bounces.google.com>
+            Received: from mail-sor-f69.google.com (mail-sor-f69.google.com. [209.85.220.69])
+            by mx.google.com with SMTPS id o19sor11496245ild.83.2019.11.09.22.52.38
+            for <pathadetushar2@gmail.com>
+               (Google Transport Security);
+               Sat, 09 Nov 2019 22:52:38 -0800 (PST)
+               Received-SPF: pass (google.com: domain of
+               3trphxqgldjeab-ercyllbhghor.pbzcngunqrghfuneptznvy.pbz@chime-notifications.bounces.google.com
+               designates 209.85.220.69 as permitted sender) client-ip=209.85.220.69;
+               Authentication-Results: mx.google.com;
+               dkim=pass header.i=@youtube.com header.s=20161025 header.b=xNry1C8k;
+               spf=pass (google.com: domain of
+               3trphxqgldjeab-ercyllbhghor.pbzcngunqrghfuneptznvy.pbz@chime-notifications.bounces.google.com
+               designates 209.85.220.69 as permitted sender)
+               smtp.mailfrom=3trPHXQgLDjEab-eRcYllbhghOR.PbZcNgUNQRghfUNepTZNVY.PbZ@chime-notifications.bounces.google.com;
+               dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=youtube.com
+               DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+               d=youtube.com; s=20161025;
+               h=mime-version:date:message-id:subject:from:to;
+               bh=u7Y4B6jL8v6Ekl6H2D+EnRtxiDrq3ZpoxA4+dr6xAyA=;
+               b=xNry1C8kJ+HNHLwut6fhdJCycPIobU5kg0GdyA43cs+ccpAOt+SlgqlJcCncsls9HJ
+               Nhq22e2eF2SdxRYgx5/JpLoVn2gycywk4VdCmWe0vGVp1FhtT+zAgwpx4jerLFGgK6Pt
+               kS86HNDoxdyMEgtjGPOJyid/dFWlEnNlvoqnnoc95Bo4S9wK28COUkQFaRmNuMiWZAWo
+               sUlh91KO9U8l0VoOjrsion: 1.0
+               X-Received: by 2002:a92:865c:: with SMTP id g89mr24172414ild.291.1573368758164;
+               Sat, 09 Nov 2019 22:52:38 -0800 (PST)
+               Date: SatQgbWFuYWdlIGhvdyB5b3VyIGRhdGEgaXMgIA0KdXNlZCBieSB2aXNpdGluZyB5b3VyIEdvb2ds
+               ZSBBY2NvdW50IDxodHRwczovL215YWNjb3VudC5nb29nbGUuY29tPi4NCg0KVGhhbmsgeW91IGZv
+               ciBiZWluZyBwYXJ0IG9mIHRoZSBZb3VUdWJlIGNvbW11bml0eSENCg0KKGMpIDIwMTkgR29vZ2xl
+               IExMQywgMTYwMCBBbXBoaXRoZWF0cmUgUGFya3dheSwgTW91bnRhaW4gVmlldywgQ0EgOTQwNDMu
+               DQoNCllvdSBoYXZlIHJlY2VpdmVkIHRoaXMgbWFuZGF0b3J5IHNlcnZpY2UgYW5ub3VuY2VtZW50
+               IHRvIHVwZGF0ZSB5b3UgYWJvdXQgIA0KaW1wb3J0YW50IGNoYW5nZXMgdG8gdGhlIFlvdVR1YmUg
+               VGVybXMuDQo=
+               --000000000000ee5fdc0596f875b8
+               Content-Type: text/html; charset="UTF-8"
+               Content-Transfer-Encoding: quoted-printable
+
+               <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www=
+.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+               <html xmlns=3D"https://www.w3.org/1999/xhtml">
+
+               <head>
+                  <title>YouTube</title>
+                  <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf=-8" />
+                  <!--[if !mso]><!-->
+                  <meta http-equiv=3D"X-UA-Compatible" content=3D"IE=3Dedge" />
+                  <!--<![endif]-->
+                  <meta name=3D"viewport" content=3D"width=3Ddevice-width, initial-scal=e=3D1.0" />
+                  <meta name=3D"robots" content=3D"no index">
+                  <!--[if mso | ie]>
+      <style>
+         .sup {
+         vertical-align: 1px !important;=20
+         font-size: 100% !important;
+         }
+         .paddright1{
+         padding-right: 25px !important;
+         }
+         .paddright2{
+         padding-right: 43px !important;
+         }
+         .paddright3{
+         padding-right: 73px !important;
+         }
+         .outlook_left_padding_30{
+         padding-left: 30px !important;
+         }
+      </style>
+      <![endif]-->
+                  <!--[if ie]>
+      <style>
+         .sup {
+         vertical-align: 6px !important;=20
+         font-size: 80% !important;
+         }
+      </style>
+      <![endif]-->
+                  <style>
+                     a:link,
+                     a:visited,
+                     a:hover,
+                     a:active {
+                        color: #4285f4;
+                        text-decoration: none;
+                     }
+
+                     .appleLinks a {
+                        color: #000000 !important;
+                        text-decoration: none !imp=ortant;
+                     }
+
+                     .appleLinkswhite a {
+                        color: #ffffff !important;
+                        text-decoration: none= !important;
+                     }
+
+                     .appleLinksblack a {
+                        color: #111111 !important;
+                        text-decoration: none= !important;
+                     }
+
+                     strong {
+                        font-weight: bold !important;
+                     }
+
+                     em {
+                        font-style: italic !important;
+                     }
+
+                     body {
+                        -webkit-text-size-adjust: none !important;
+                        -webkit-font-smoothing: antialiased !important;
+                        =20 -ms-text-size-adjust: none !important;
+                     }
+
+                     .yshortcuts a span {
+                        color: inherit !important;
+                        border-bottom: none !important;
+                     }
+
+                     html {
+                        -webkit-text-size-adjust: none;
+                        -ms-text-size-adjust: 100%;
+                     }
+
+                     .ReadMsgBody {
+                        width: 100%;
+                     }
+
+                     .ExternalClass {
+                        width: 100%;
+                     }
+
+                     .ExternalClass * {
+                        line-height: 100%
+                     }
+
+                     td {
+                        -webkit-text-size-adjust: none;
+                     }
+
+                     a[href^=3Dtel] {
+                        color: inherit;
+                        text-decoration: none;
+                     }
+
+                     .mob-hide {
+                        display: none !important;
+                     }
+
+                     div,
+                     p,
+                     a,
+                     li,
+                     td {
+                        -webkit-text-size-adjust: none;
+                     }
+
+                     td {
+                        text-decoration: none !important;
+                     }
+
+                     a[x-apple-data-detectors] {
+                        color: inherit !important;
+                        text-decoration: none !important;
+                        font-size: inherit !important;
+                        font-family: inherit !important;
+                        font-weight: inherit !important;
+                        line-height: inherit !important;
+                     }
+
+                     @media screen and (max-width: 480px) {
+                        .table {
+                           width: 320px !important;
+                        }
+
+                        .table-main-gmail {
+                           /* Forces Gmail to display Desktop view */
+                           width: 100% !important;
+                           min-width: 100% !important;
+                        }
+
+                        .table-l {
+                           width: 90% !important;
+                        }
+
+                        .table-m {
+                           width: 80% !important;
+                        }
+
+                        .table-s {
+                           width: 70% !important;
+                        }
+
+                        .hide {
+                           display: none !important;
+                        }
+
+                        .mobile-only {
+                           display: block !important;
+                           width: 100% !important;
+                           max-height: none !important;
+                           =20 color: #000000 !important;
+                           font-size: 32px !important;
+                        }
+
+                        .pad-15 {
+                           padding: 10px 10px 0 10px !important;
+                        }
+
+                        .pad-25 {
+                           padding: 10px 10px 0 20px !important;
+                        }
+
+                        .padpara1 {
+                           padding: 20px 10px 0 10px !important;
+                        }
+
+                        .logo_pad {
+                           padding: 27px 10px !important;
+                        }
+
+                        .logo_size {
+                           width: 185px !important;
+                        }
+
+                        .padbot {
+                           padding: 20px 10px 10px 10px !important;
+                        }
+
+                        .padfoot {
+                           padding-left: 10px !important;
+                           padding-right: 10px !important;
+                           =20
+                        }
+
+                        =20
+                     }
+                  </style>
+               </head>
+
+               <body style=3D"margin: 0 auto; padding:0px; -webkit-text-size-adjust: no=ne; -webkit-font-smoothing:
+                 antialiased; -ms-text-size-adjust: none; font-f=amily:Roboto, Helvetica Neue, Helvetica, Arial,
+                 sans-serif; font-size:12px;=color:#333333;" bgcolor=3D"#ffffff">
+                  <center style=3D"width:100%; table-layout:fixed; -webkit-text-size-ad=just:100%;
+                    -ms-text-size-adjust:100%; background-color:#ffffff;">
+                     <div style=3D"margin:0 auto; max-width:600px;">
+                        <!--[if (gte mso 9)|(IE)]>
+            <table align=3D"center" width=3D"600" cellspacing=3D"0" cellpad=
+ding=3D"0">
+               <tr>
+                  <td>
+                     <![endif]-->
+                        <table style=3D"margin:0 auto; width:100%; max-width:6=00px;" align=3D"center" cellspacing=3D"0"
+                          cellpadding=3D"0">
+                           <tr>
+                              <td align=3D"center" valign=3D"top" class=3D"tab=le" style=3D"padding-top: 10px">
+                                 <table border=3D"0" cellpadding=3D"0" cellspa=cing=3D"0" width=3D"100%"
+                                   align=3D"center">
+                                    <tr>
+                                       <td align=3D"center" valign=3D"top">
+                                          <table border=3D"0" cellpadding=3D"0=" cellspacing=3D" 0" width=3D"100%"
+                                            align=3D"center">
+                                             <tr>
+                                                <td align=3D"center" valign=3D="top" bgcolor=3D"#ffffff"
+                                                  style=3D"padding:27px 30px 27px 30px; border-radi=us: 3px 3px 0 0;"
+                                                  class=3D"logo_pad">
+                                                   <table border=3D"0" cellpad=ding=3D"0" cellspacing=3D"0"
+                                                     width=3D"100%" align=3D"center">
+                                                      <tr>
+                                                         <td align=3D"left" va=lign=3D"middle">
+                                                            <table cellspacing==3D"0" cellpadding=3D"0">
+                                                               <tr>
+                                                                  <td align=3D="left" valign=3D"middle"><a
+                                                                       target=3D"_blank"=20
+                                                                       href=3D"h=ttps://www.youtube.com"
+                                                                       style=3D"text-decoration: none; width: 131px;">
+                                                                        <img=
+                                                                          src=3D"https://services.google.com/fh/files/emails/yt_logo_rgb_light.png"=width=3D"150"
+                                                                          height=3D"auto" border=3D"0"
+                                                                          title=3D"=YouTube" alt=3D"YouTube"
+                                                                          style=3D"display:block; max-width:131px;"
+                                                                          class=3D="logo_size" />
+                                                                     </a></td>
+                                                               </tr>
+                                                            </table>
+                                                         </td>
+                                                      </tr>
+                                                   </table>
+                                                </td>
+                                             </tr>
+                                             <tr>
+                                                <td align=3D"left" valign=3D"t=op" style=3D"font-family: Roboto, Arial,
+                                                  sans-serif; color:#808080; font-we=ight:300; font-size: 16px;
+                                                  line-height:20px; vertical-align: middle; text-=decoration: none;
+                                                  padding:0 30px 0 30px;" class=3D"pad-15">
+                                                   We=E2=80=99re updating our =
+                                                   <a href=3D"https://www.youtube.com/t/terms" target=3D"_blank"
+                                                     style=3D"text=-decoration: none; color:#2196f3">Terms of
+                                                      Service</a> (=E2=80=9CTerms=E2=
+                                                   =80=9D) to improve readability and transparency. <strong>This
+                                                      update does n=
+                                                      ot change the <a href=3D"https://policies.google.com/privacy"
+                                                        target=3D"_bl=ank" style=3D"text-decoration: none;
+                                                        color:#2196f3">Google Privacy Policy</= a>, nor the way we
+                                                         collect and process your data.</strong>
+                                                </td>
+                                             </tr>
+                                             <tr>
+                                                <td align=3D"left" valign=3D"t=op" style=3D"font-family: Roboto, Arial,
+                                                  sans-serif; color:#808080; font-we=ight:300; font-size: 16px;
+                                                  line-height:20px; vertical-align: middle; text-=decoration: none;
+                                                  padding: 20px 30px 0 30px;" class=3D"pad-15">
+                                                   We=E2=80=99ve provided a <a=
+                                                     href=3D"https://www.youtube.com/t/terms?preview=3D20191210#summary"
+                                                     target==3D"_blank" style=3D"text-decoration: none; color:#2196f3">
+                                                      summary of key c=
+                                                      hanges</a> but here=E2=80=99s what you can expect:
+                                                </td>
+                                             </tr>
+                                             <tr>
+                                                <td align=3D"left" valign=3D"to=p" style=3D"padding: 10px 30px 0 50px;"
+                                                  class=3D"pad-25">
+                                                   <table cellspacing=3D"0" cell=padding=3D"0" border=3D"0"
+                                                     width=3D"100%">
+                                                      <tr>
+                                                         <td align=3D"left" valign==3D"top" style=3D"font-family:
+                                                           Roboto, Arial, sans-serif; color:#808080; fo=nt-weight:500;
+                                                           font-size: 16px; line-height:20px; padding-right: 10px;">
+                                                            &bull;
+                                                         </td>
+                                                         <td align=3D"left" valign=00; font-size: 16px;
+                                                           line-height:20px; padding-top: 10px;">
+                                                            Expanded commitments to=
+                                                            notify you about changes that may affect you, such as
+                                                            product updates or f=
+                                                            uture changes to the Terms; and
+                                                         </td>
+                                                      </tr>
+                                                      <tr>
+                                                         <td align=3D"left" valign==3D"top" style=3D"font-family:
+                                                           Roboto, Arial, sans-serif; color:#808080; fo=nt-weight:500;
+                                                           font-size: 16px; line-height:20px; padding-right: 10px;
+                                                           padd=ing-top: 10px;">
+                                                            &bull;
+                                                         </td>
+                                                         <td align=3D"left" valign==3D"top" style=3D"font-family:
+                                                           Roboto, Arial, sans-serif; color:#808080; fo=nt-weight:300;
+                                                           font-size: 16px; line-height:20px; padding-top: 10px;">
+                                                            Better alignment betwee=
+                                                            n our Terms and how YouTube works today.
+                                                         </td>
+                                                      </tr>
+                                                   </table>
+                                                </td>
+                                             </tr>
+                                             <tr>
+                                                <td align=3D"left" valign=3D"t=op" style=3D"font-family: Roboto, Arial,
+                                                  sans-serif; color:#808080; font-we=ight:300; font-size: 16px;
+                                                  line-height:20px; vertical-align: middle; paddin=g: 20px 30px 0 30px;"
+                                                  class=3D"pad-15">
+                                                   <strong>The new Terms will t=
+                                                      ake effect on 10 December, 2019. Please make sure you read
+                                                      the <a
+                                                        href=3D"h=ttps://www.youtube.com/t/terms?preview=3D20191210#main"
+                                                        target=3D"_blank" s=tyle=3D"text-decoration: none;
+                                                        color:#2196f3">updated Terms</a> carefully.<= /strong> If
+                                                         you would like more information, you can find additional
+                                                         inform=
+                                                         ation in our <a
+                                                           href=3D"https://support.google.com/youtube/answer/9326895"=target=3D"_blank"
+                                                           style=3D"text-decoration: none; color:#2196f3">Help
+                                                            Cente=
+                                                            r</a>.
+                                                </td>
+                                             </tr>
+                                             <tr>
+                                                <td align=3D"left" valign=3D"t=op" style=3D"font-family: Roboto, Arial,
+                                                  sans-serif; color:#808080; font-we=ight:300; font-size: 16px;
+                                                  line-height:20px; vertical-align: middle; text-=decoration:
+                                                  none;padding: 20px 30px 0px 30px;" class=3D"pad-15">
+                                                   If you allow your child to =
+                                                   use YouTube Kids, then please note that you are agreeing to the
+                                                   new Terms o=
+                                                   n behalf of your child as well.
+                                                </td>
+                                             </tr>
+                                             <tr>
+                                                <td align=3D"left" valign=3D"t=op" style=3D"font-family: Roboto, Arial,
+                                                  sans-serif; color:#808080; font-we=ight:300; font-size: 16px;
+                                                  line-height:20px; vertical-align: middle; text-=decoration:
+                                                  none;padding: 20px 30px 0px 30px;" class=3D"pad-15">
+                                                   You can always review your =
+                                                   privacy settings and manage how your data is used by visiting
+                                                   your <a href==3D"https://myaccount.google.com" target=3D"_blank"
+                                                     style=3D"text-decoratio=n: none; color:#2196f3">Google Account</a>.
+                                                </td>
+                                             </tr>
+                                             <tr>
+                                                <td align=3D"left" valign=3D"t=op" style=3D"padding:20px 30px 0px
+                                                  30px;">
+                                                   <table width=3D"100%" cells=pacing=3D"0" cellpadding=3D"0"
+                                                     border=3D"0">
+                                                      <tr>
+                                                         <td align=3D"left" va=lign=3D"top" style=3D"font-family:
+                                                           Roboto, Arial, sans-serif; color:#808080=; font-weight:300;
+                                                           font-size: 16px; line-height:20px; vertical-align: middl=e;
+                                                           text-decoration: none; border-bottom: 1px solid #cccccc;
+                                                           padding-bottom=: 30px;" class=3D"pad-15">
+                                                            Thank you for bein=
+                                                            g part of the YouTube community!
+                                                         </td>
+                                                      </tr>
+                                                   </table>
+                                                </td>
+                                             </tr> =20
+                                             <tr>
+                                                <td align=3D"left" valign=3D"t=op" style=3D"padding-top:
+                                                  0px;padding-bottom: 10px">
+                                                   <table cellspacing=3D"0" ce=llpadding=3D"0" border=3D"0"
+                                                     width=3D"100%" bgcolor=3D"#FFFFFF">
+                                                      <tr>
+                                                         <td align=3D"left" va=lign=3D"top" style=3D"padding-top:
+                                                           20px;font-family: Roboto, Helvetica Neue=, Helvetica, Arial,
+                                                           sans-serif; font-size: 12px; color: #9a9a9a; line-heigh=t:
+                                                           18px; padding-left: 30px; padding-right: 30px;
+                                                           font-weight:300;padding-b=ottom: 20px" class=3D"padfoot">
+                                                            <a target=3D'_blan=k' href=3D"#" style=3D"text-decoration:
+                                                              none; color: #9a9a9a;">&copy; 2019 =
+                                                               Google LLC, 1600 Amphitheatre Parkway, Mountain
+                                                               View, CA 94043.
+                                                            </a>
+                                                         </td>
+                                                      </tr>
+                                                      <tr>
+                                                         <td align=3D"left" va=lign=3D"top" style=3D" padding-bottom:
+                                                           20px; font-family: Roboto, Helvetica=Neue, Helvetica, Arial,
+                                                           sans-serif; font-size: 12px; color: #9a9a9a; line-=height:
+                                                           18px; padding-left: 30px; padding-right: 30px;
+                                                           font-weight:300;" cl=ass=3D"padfoot">
+                                                            You have received =
+                                                            this mandatory service announcement to update you
+                                                            about important changes t=
+                                                            o the YouTube Terms.
+                                                         </td>
+                                                      </tr>
+                                                   </table>
+                                                </td>
+                                             </tr>
+                                          </table>
+                                       </td>
+                                    </tr>
+                                 </table>
+                              </td>
+                           </tr>
+                        </table>
+                        <!--[if (gte mso 9)|(IE)]>
+                  </td>
+               </tr>
+            </table>
+            <![endif]-->
+                     </div>
+                  </center>
+               </body>
+
+               </html>
+               --000000000000ee5fdc0596f875b8--
+               )
+               a225 OK Success

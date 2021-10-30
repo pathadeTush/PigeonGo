@@ -3,6 +3,7 @@ import ssl
 import os
 import base64
 import time
+# Reference: https://www.geeksforgeeks.org/send-mail-attachment-gmail-account-using-python/
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -21,12 +22,12 @@ from email import encoders
 
 '''
 '''
-Email Provider    IMAP Settings            POP Settings             SMTP Settings
+    Email Provider    IMAP Settings            POP Settings             SMTP Settings
 
-Microsoft 365,    Server:                  Server:                  Server:
-Outlook,          outlook.office365.com    outlook.office365.com    smtp.office365.com
-Hotmail,          Port: 993                Port: 995                Port: 587
-Live.com          Encryption: SSL/TLS      Encryption: SSL/TLS      Encryption: STARTTLS
+    Microsoft 365,    Server:                  Server:                  Server:
+    Outlook,          outlook.office365.com    outlook.office365.com    smtp.office365.com
+    Hotmail,          Port: 993                Port: 995                Port: 587
+    Live.com          Encryption: SSL/TLS      Encryption: SSL/TLS      Encryption: STARTTLS
 '''
 
 class MAIL_SERVER:
@@ -42,7 +43,7 @@ mail_servers['outlook'] = MAIL_SERVER('smtp.office365.com', 587)
 
 class SMTP:
 
-    # Timeouts
+    # Timeouts as per RFC 5321  section 4.5.3.2 https://datatracker.ietf.org/doc/html/rfc5321#section-4.5.3.2
     CONN_TOUT = 300 # 5 min
     MAIL_TOUT = 300 # 5 min
     RCPT_TOUT = 300 # 5 min
@@ -51,7 +52,7 @@ class SMTP:
     DATA_TERMINATION_TOUT = 600 # 10 min
 
 
-    # Commands
+    # Commands as per RFC 5321 https://datatracker.ietf.org/doc/html/rfc5321
     HELLO_CMD = 'EHLO Greetings'
     STARTTLS_CMD = 'STARTTLS'
     AUTH_CMD = 'AUTH LOGIN'
@@ -135,6 +136,7 @@ class SMTP:
         return response[:3], response
 
      # SSL Wrapper required for security to communicate with smtp server of google
+    #  Reference: https://docs.python.org/3/library/ssl.html
     def SSL_Wrapper(self):
         context = ssl.create_default_context()
         self.__socket = context.wrap_socket(self.__socket, server_hostname=self.HOST)
@@ -212,19 +214,19 @@ class SMTP:
         self.config_RCPT_TO(TO_email)
         self.initiate_DATA()
 
-        msg = MIMEMultipart()
-        msg['From'] = FROM_email
-        msg['To'] = TO_email
-        msg['Subject'] = Subject
+        msg = ''
+        msg += f'From: {FROM_email}' + '\n'
+        msg += f'To: {TO_email}' + '\n'
+        msg += f'Subject: {Subject}' + '\n'
         body = f'Sending email via imap-smtp client. {time.ctime()}'
-        msg.attach(MIMEText(body, 'plain'))
+        msg += '\n' + body
 
-        if Attachment:
-            self.add_attachment(msg, Attachment)
+        # if Attachment:
+        #     self.add_attachment(msg, Attachment)
 
-        data = msg.as_string()
-        # print(data)
-        self.send_DATA(data)
+        # data = msg.as_string()
+        # print(msg)
+        self.send_DATA(msg)
         self.terminate_DATA()
 
     def config_MAIL_FROM(self, email):
@@ -289,6 +291,7 @@ class SMTP:
             raise Exception('Error occured! Mail not sent successfully! Try again!')
         print('Mail sent successfully *_*')
 
+    # Reference: https://www.geeksforgeeks.org/send-mail-attachment-gmail-account-using-python/
     def add_attachment(self, msg, Attachment):
         attachment = open(Attachment, 'rb')
         p = MIMEBase('application', 'octet-stream')
@@ -312,7 +315,7 @@ class SMTP:
 
 smtp_socket = SMTP()
 smtp_socket.login()
-smtp_socket.send_email('pathadetc19.comp@coep.ac.in', 'Mailing from imap-smtp client', 'attachment.txt')
+smtp_socket.send_email('tusharpathade475@gmail.com', 'Mailing from imap-smtp client')
 smtp_socket.quit()
 smtp_socket.close_connection()
         
