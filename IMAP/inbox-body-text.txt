@@ -1,0 +1,9 @@
+* 1 FETCH (FLAGS (\Seen) BODY[TEXT] {355}
+To reset your password, visit the following link:
+http://127.0.0.1:5000/reset_password/eyJhbGciOiJIUzUxMiIsImlhdCI6MTYxODEyNjI4NCwiZXhwIjoxNjE4MTI4MDg0fQ.eyJ1c2VyX2lkIjo2fQ.M28Oxd1W-rg3zWeo7PtVFbAYhhackBQlNNxFMO1eCORBt2wk2NeDPkmwVDtL0Npfg1pam8vwVOpTLQVHaj58_g
+If you did not make this request then simply ignore this email and no changes will be made.
+)
+* 2 FETCH (FLAGS (\Seen) BODY[TEXT] {388}
+
+        To reset your password, 
+        visit the following link: a225 OK Success

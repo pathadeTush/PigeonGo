@@ -2,6 +2,8 @@ import socket
 import ssl
 import os
 import time
+from bs4 import BeautifulSoup
+
 
 '''
     imap.gmail.com
@@ -22,8 +24,8 @@ class IMAP:
     email_id = os.environ.get('EMAIL_USER')
     email_pwd = os.environ.get('EMAIL_PASS')
 
-    HOST = 'imap.gmail.com'
-    # HOST = 'outlook.office365.com'
+    # HOST = 'imap.gmail.com'
+    HOST = 'outlook.office365.com'
     PORT = 993
 
     CRLF = '\r\n'
@@ -184,7 +186,7 @@ class IMAP:
         if code != 'OK':
             raise Exception('__EXAMINE Error__')
 
-    # Check Status of Mailbox
+    # Check Status of Mailbox (Not used as such)
     def Status(self, mailbox):
         STATUS_CMD = f'a005 STATUS {mailbox} (UIDNEXT MESSAGES UIDVALIDITY HIGHESTMODSEQ)'
         code, response = self.Send_CMD(STATUS_CMD)
@@ -201,8 +203,9 @@ class IMAP:
         if code != 'OK':
             raise Exception('__CLOSE Error__')
 
+
     def fetch_complete_mail(self, start_index):
-        cmd = f'a225 FETCH {start_index}:{start_index+1} (FLAGS BODY[])'
+        cmd = f'a225 FETCH {start_index}:{start_index+1} (FLAGS BODY[])' # Reference rfc imap doc page 57
         code, response = self.Send_CMD(cmd)
         # print(f'FETCH response:\n {response}')
         header = {}
@@ -235,29 +238,52 @@ class IMAP:
             raise Exception('__FETCH Complete Mail Error__')
 
     def fetch_mail_header(self, start_index, count):
-        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (BODY.PEEK[HEADER])'
+        # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
+        # cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (BODY.PEEK[HEADER])'
+        cmd = f'A654 FETCH {start_index}:{start_index + count} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type)])'
         code, response = self.Send_CMD(cmd)
-        print(f'FETCH response:\n {response}')
         if code != 'OK':
             raise Exception('__FETCH Error__')
+        
+        if response[-10:-8] == 'OK':
+            response = response[: -10] + '\n)\n'
+
+        Headers = []
+        header = {}
+        lines = response.splitlines()
+        for line in lines:
+            if line.startswith('Date:') or line.startswith('DATE:'):
+                header['Date'] = line[6:]
+            elif line.startswith('From:') or line.startswith('FROM:'):
+                header['From'] = line[6:]
+            elif line.startswith('To:') or line.startswith('TO:'):
+                header['To'] = line[4:]
+            elif line.startswith('Bcc:') or line.startswith('BCC:'):
+                header['Bcc'] = line[5:]
+            elif line.startswith('Subject:') or line.startswith('SUBJECT:'):
+                header['Subject'] = line[9:]
+            elif line.startswith('Content-Type:'):
+                header['Content-Type'] = line[14:]
+            elif line == ')':
+                Headers.append(header)
+                header = {}
+
+        print(f'FETCH response:\n {response}\n')
+        print('Headers.....\n')
+        for header in Headers:
+            for key in header:
+                print(f'{key}: {header[key]}')
+            print()
 
         '''
-            HEADER
-             * 1 FETCH (FLAGS (\Seen) BODY[HEADER] {665}
-            Return-Path: <pathadetushar2@gmail.com>
-            Received: from [127.0.1.1] ([117.233.122.76]) by smtp.googlemail.com with
-            ESMTPSA id c21sm3429394pfo.91.2021.04.11.00.31.34 for
-            <tusharpathade475@gmail.com> (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384
-            bits=256/256); Sun, 11 Apr 2021 00:31:36 -0700 (PDT)
-            From: pathadetushar2@gmail.com
-            X-Google-Original-From: noreply@demo.com
-            Content-Type: text/plain; charset="utf-8"
-            MIME-Version: 1.0
-            Content-Transfer-Encoding: 7ba225 OK Success
+            Content-Type: text/plain; charset="utf-8"  (for sent mail)
+
+            Content-Type: multipart/alternative; boundary="0000000000003eaeeb059ad8f802"  (for important, Inbox)
         '''
 
-    def fetch_mail_body_structure(self, start_index, count = 1):
-        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (BODYSTRUCTURE)'
+# Fetch Envelope allows atmost 8 mail headers to be fetched
+    def fetch_mail_ENVELOPE(self, start_index, count = 1):
+        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (ENVELOPE)'
         code, response = self.Send_CMD(cmd)
         print(f'FETCH Body Structure response:\n {response}')
         if code != 'OK':
@@ -265,27 +291,71 @@ class IMAP:
 
         '''
             INBOX
-            EXAMINE response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-            * OK [PERMANENTFLAGS ()] Flags permitted.
-            * OK [UIDVALIDITY 1] UIDs valid.
-            * 65 EXISTS
-            * 0 RECENT
-            * OK [UIDNEXT 66] Predicted next UID.
-            * OK [HIGHESTMODSEQ 25029]
-            a004 OK [READ-ONLY] INBOX selected. (Success)
 
             FETCH Body Structure response:
             * 1 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") NIL NIL "BASE64" 4564 92 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "QUOTED-PRINTABLE" 38967 780 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "00000000000092f1030589e24b62") NIL NIL))a225 OK Success
             CLOSE Response: a012 OK Returned to authenticated state. (Success)
         '''
+        '''
+            INBOX mailbox selected for read only access
+            FETCH ENVELOPE response:
+            * 1 FETCH (ENVELOPE ("Mon, 27 May 2019 10:58:27 -0700" "Finish setting up your new Google Account" (("Google Community Team" NIL "googlecommunityteam-noreply" "google.com")) (("Google Community Team" NIL "googlecommunityteam-noreply" "google.com")) (("Google Community Team" NIL "googlecommunityteam-noreply" "google.com")) ((NIL NIL "pathadetushar2" "gmail.com")) NIL NIL NIL "<41b9bff798be5ce06ae19d982183decf2176b622-20063660-110518678@google.com>"))a225 OK Success
+            CLOSE Response: a012 OK Returned to authenticated state. (Success)
+        '''
+        '''
+            * 1 FETCH (INTERNALDATE "27-May-2019 17:58:43 +0000")a225 OK Success
+        '''
 
-    def fetch_mail_body_text(self, start_index, count = 1):
-        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (FLAGS BODY[TEXT])'
+    # Fetch mail body and extract content with mail body of html type
+    def fetch_html_body_content(self, start_index, count = 1):
+        cmd = f'a225 FETCH {start_index}:{start_index + count} (FLAGS BODY[TEXT])'
         code, response = self.Send_CMD(cmd)
-        print(f'FETCH Body Text response:\n {response}')
+        # print(f'FETCH Body Text response:\n {response}')
         if code != 'OK':
             raise Exception('__FETCH Body Text Error__')
+        
+        # To extract content from html format data
+        # Reference: https://beautiful-soup-4.readthedocs.io/en/latest/#quick-start
+        parsed_data = BeautifulSoup(response, features="html.parser")
+        lines = parsed_data.get_text().splitlines()
+        content = ''
+        for line in lines:
+            try:
+                if line[-1] == '=':
+                    line = line[:-1]
+            except:
+                pass
+            content += line
 
+        print(f'content......\n{content}')
+
+        '''
+            head>Sign-in =
+            attempt was blocked Someone just used your pass=
+            word to try to sign in to your account from a non-Google app. Google blocke=
+            d them, but you should check what happened. Review your account activity to=
+            make sure no one else has access.Check activityYou can also se=
+            e securia225 OK Success
+        '''
+    # Fetch content from plain/text mail body
+    def fetch_plain_body_content(self, start_index, count = 1):
+        cmd = f'a225 FETCH {start_index}:{start_index + count} (FLAGS BODY[TEXT])'
+        code, response = self.Send_CMD(cmd)
+        print(f'fetch plain body content response ...\n{response}')
+        if code != 'OK':
+            raise Exception('__Fetch Error__')
+        
+        if response[:3] == f'* {start_index}':
+            response = response.splitlines()
+            length = len(response)
+            content = ''
+            for i in range(1, length):
+                if response[i] == ')':
+                    break
+                content += response[i] + '\n'
+
+        print('response............')
+        print(content)
 
     ''' Any State Functions '''
 
@@ -314,11 +384,15 @@ imap_socket = IMAP()
 # for mailbox in mailboxes:
 #     imap_socket.Examine(mailbox)
 imap_socket.Examine('INBOX')
+# imap_socket.Examine('"[Gmail]/Important"')
 # imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
 # imap_socket.Noop() 
 imap_socket.fetch_complete_mail(1)
 # imap_socket.fetch_mail_header(1, 1)
+# imap_socket.fetch_html_body_content(1)
+# imap_socket.fetch_mail_body_structure(1, 8)
+# imap_socket.fetch_plain_body_content(1)
 imap_socket.close_mailbox()
 imap_socket.Logout()
 imap_socket.close_connection()
