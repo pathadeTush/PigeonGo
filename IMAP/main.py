@@ -3,7 +3,7 @@ import ssl
 import os
 import time
 from bs4 import BeautifulSoup
-
+import quopri as QP
 
 '''
     imap.gmail.com
@@ -21,8 +21,10 @@ from bs4 import BeautifulSoup
 
 class IMAP:
 
-    email_id = os.environ.get('EMAIL_USER')
-    email_pwd = os.environ.get('EMAIL_PASS')
+    # email_id = os.environ.get('EMAIL_USER')
+    # email_pwd = os.environ.get('EMAIL_PASS')
+    email_id = os.environ.get('EMAIL_CLG_USER')
+    email_pwd = os.environ.get('EMAIL_CLG_PASS')
 
     # HOST = 'imap.gmail.com'
     HOST = 'outlook.office365.com'
@@ -65,20 +67,19 @@ class IMAP:
         self.__socket.send(cmd.encode())
 
         status_code = ["OK", "NO", "BAD"]
-        Response = ''
+        complete_response = ''
         while True:
-            response = self.__socket.recv(1024).decode().rstrip('\r\t\n')
+            response = self.__socket.recv(1024).decode('ascii', errors='ignore').rstrip('\r\t\n')
+            complete_response += response
             try:
                 code = response.split('\n')[-1].split(' ')[1]
-            except:
-                pass 
-            else:
-                Response += response
-                if code in status_code:
-                    break
-                continue
+            except Exception as e:
+                continue 
+            if code in status_code:
+                break
+            continue
         
-        return code, Response
+        return code, complete_response
 
 
     ''' Not Authenticated Functions '''
@@ -136,19 +137,18 @@ class IMAP:
         lines = response.splitlines()
         lines.pop(-1) # OK line
 
-        MailBoxes = []
+        self.MailBoxes = []
         folders = []
 
         for line in lines:
             MailBox = line.split('"/"')[1][1:]
-            folder = MailBox[1:-1]
+            folder = MailBox.rstrip('"')
             folder = folder.split('/')[-1]
-            if folder != '[Gmail]':
-                folders.append(folder)
-                MailBoxes.append(MailBox)
-                # print(MailBox)
+            folders.append(folder)
+            self.MailBoxes.append(MailBox)
+            # print(MailBox)
         
-        return MailBoxes, folders
+        return self.MailBoxes, folders
 
         '''
             ['INBOX', 'All Mail', 'Drafts', 'Important', 'Sent Mail', 'Spam', 'Starred', 'Trash']
@@ -168,6 +168,10 @@ class IMAP:
             a003 OK Success       
         '''
 
+        '''
+            ['Archive', 'Calendar', 'Calendar/Birthdays', '"Calendar/India holidays"', '"Calendar/United Kingdom holidays"', 'Contacts', '"Conversation History"', '"Deleted Items"', 'Drafts', 'INBOX', 'Journal', '"Junk Email"', 'Notes', 'Outbox', '"Sent Items"', 'Tasks']
+        '''
+
     # Open Mailbox
     def Select(self, mailbox):
         SELECT_CMD = f'a003 SELECT {mailbox}'
@@ -176,6 +180,7 @@ class IMAP:
         print(f'SELECT response: {response}\n')
         if code != 'OK':
             raise Exception('__SELECT Error__')
+        self.selected_mailbox = mailbox
     
     # Read Mailbox
     def Examine(self, mailbox):
@@ -185,6 +190,8 @@ class IMAP:
         # print(f'EXAMINE response: {response}\n')
         if code != 'OK':
             raise Exception('__EXAMINE Error__')
+        self.selected_mailbox = mailbox
+        
 
     # Check Status of Mailbox (Not used as such)
     def Status(self, mailbox):
@@ -203,85 +210,7 @@ class IMAP:
         if code != 'OK':
             raise Exception('__CLOSE Error__')
 
-
-    def fetch_complete_mail(self, start_index):
-        cmd = f'a225 FETCH {start_index}:{start_index+1} (FLAGS BODY[])' # Reference rfc imap doc page 57
-        code, response = self.Send_CMD(cmd)
-        # print(f'FETCH response:\n {response}')
-        header = {}
-        body = ''
-        is_blankline_appeared = False 
-        for line in response.splitlines():
-            if len(line) == 0:
-                is_blankline_appeared = True
-            elif line.startswith(')'):
-                is_blankline_appeared = False
-            elif is_blankline_appeared:
-                body += line + '\n'
-            elif line.startswith('From:'):
-                header['From'] = line[6:]
-            elif line.startswith('To:'):
-                header['To'] = line[4:]
-            elif line.startswith('Date:'):
-                header['Date'] = line[6:]
-            elif line.startswith('Subject:'):
-                header['Subject'] = line[9:]
-
-        print(header)
-        print()
-        print(body)
-
-        file = open('inbox-1.txt', 'w+')
-        file.write(response)
-        file.close()
-        if code != 'OK':
-            raise Exception('__FETCH Complete Mail Error__')
-
-    def fetch_mail_header(self, start_index, count):
-        # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
-        # cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (BODY.PEEK[HEADER])'
-        cmd = f'A654 FETCH {start_index}:{start_index + count} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type)])'
-        code, response = self.Send_CMD(cmd)
-        if code != 'OK':
-            raise Exception('__FETCH Error__')
-        
-        if response[-10:-8] == 'OK':
-            response = response[: -10] + '\n)\n'
-
-        Headers = []
-        header = {}
-        lines = response.splitlines()
-        for line in lines:
-            if line.startswith('Date:') or line.startswith('DATE:'):
-                header['Date'] = line[6:]
-            elif line.startswith('From:') or line.startswith('FROM:'):
-                header['From'] = line[6:]
-            elif line.startswith('To:') or line.startswith('TO:'):
-                header['To'] = line[4:]
-            elif line.startswith('Bcc:') or line.startswith('BCC:'):
-                header['Bcc'] = line[5:]
-            elif line.startswith('Subject:') or line.startswith('SUBJECT:'):
-                header['Subject'] = line[9:]
-            elif line.startswith('Content-Type:'):
-                header['Content-Type'] = line[14:]
-            elif line == ')':
-                Headers.append(header)
-                header = {}
-
-        print(f'FETCH response:\n {response}\n')
-        print('Headers.....\n')
-        for header in Headers:
-            for key in header:
-                print(f'{key}: {header[key]}')
-            print()
-
-        '''
-            Content-Type: text/plain; charset="utf-8"  (for sent mail)
-
-            Content-Type: multipart/alternative; boundary="0000000000003eaeeb059ad8f802"  (for important, Inbox)
-        '''
-
-# Fetch Envelope allows atmost 8 mail headers to be fetched
+    # Fetch Envelope allows atmost 8 mail headers to be fetched
     def fetch_mail_ENVELOPE(self, start_index, count = 1):
         cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (ENVELOPE)'
         code, response = self.Send_CMD(cmd)
@@ -306,6 +235,65 @@ class IMAP:
             * 1 FETCH (INTERNALDATE "27-May-2019 17:58:43 +0000")a225 OK Success
         '''
 
+    # For outlook all header elementsa and content-type, content-transfer-encoding, Content-Description, Content-Disposition present in body part
+    def fetch_complete_mail(self, start_index):
+        cmd = f'a225 FETCH {start_index} (FLAGS BODY[])' # Reference rfc imap doc page 57
+        code, response = self.Send_CMD(cmd)
+        print(f'FETCH response:\n{response}')
+        
+        file = open('inbox-1.txt', 'w+')
+        file.write(response)
+        file.close()
+        if code != 'OK':
+            raise Exception('__FETCH Complete Mail Error__')
+
+    def fetch_mail_header(self, start_index, count):
+        # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
+        # cmd = f'a225 FETCH {start_index}:{start_index + count} (BODY.PEEK[HEADER])'
+        cmd = f'A654 FETCH {start_index}:{start_index + count} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
+        code, response = self.Send_CMD(cmd)
+        if code != 'OK':
+            raise Exception('__FETCH Error__')
+        print(f'FETCH response:\n {response}\n')
+        
+        if response[-10:-8] == 'OK':
+            response = response[: -10] + '\n)\n'
+
+        Headers = []
+        header = {}
+        lines = response.splitlines()
+        for line in lines:
+            if line.startswith('Date:') or line.startswith('DATE:'):
+                header['Date'] = line[6:]
+            elif line.startswith('From:') or line.startswith('FROM:'):
+                header['From'] = line[6:]
+            elif line.startswith('To:') or line.startswith('TO:'):
+                header['To'] = line[4:]
+            elif line.startswith('Bcc:') or line.startswith('BCC:'):
+                header['Bcc'] = line[5:]
+            elif line.startswith('Subject:') or line.startswith('SUBJECT:'):
+                header['Subject'] = line[9:]
+            elif line.startswith('Content-Type:'):
+                header['Content-Type'] = line[14:]
+            elif line.startswith('Content-Transfer-Encoding:'):
+                header['Content-Transfer-Encoding'] = line[27:]
+            elif line == ')':
+                Headers.append(header)
+                header = {}
+
+        print('Headers.....\n')
+        for header in Headers:
+            for key in header:
+                print(f'{key}: {header[key]}')
+            print()
+
+        '''
+            Content-Type: text/plain; charset="utf-8"  (for sent mail)
+
+            Content-Type: multipart/alternative; boundary="0000000000003eaeeb059ad8f802"  (for important, Inbox)
+        '''
+
+
     # Fetch mail body and extract content with mail body of html type
     def fetch_html_body_content(self, start_index, count = 1):
         cmd = f'a225 FETCH {start_index}:{start_index + count} (FLAGS BODY[TEXT])'
@@ -317,18 +305,81 @@ class IMAP:
         # To extract content from html format data
         # Reference: https://beautiful-soup-4.readthedocs.io/en/latest/#quick-start
         parsed_data = BeautifulSoup(response, features="html.parser")
-        lines = parsed_data.get_text().splitlines()
-        content = ''
-        for line in lines:
-            try:
-                if line[-1] == '=':
-                    line = line[:-1]
-            except:
-                pass
-            content += line
+        for s in parsed_data(['script', 'style']):
+            s.decompose()
+        content = ' '.join(parsed_data.stripped_strings)
+        print(content)
+        # print(QP.decodestring(content).decode('utf-8'))
 
-        print(f'content......\n{content}')
+        '''
+            for decompose/extract and stripped_strings
 
+            000000092f1030589e24b62
+            Content-Type: text/html; charset="UTF-8"
+            Content-Transfer-Encoding: quoted-printable =20
+                =20
+                =20
+            =20
+            =20 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
+            =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =
+            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+            =C2=A0=C2=A0 =C2=A0 =20 =
+            Hi tushar, Welcome to Google. Your new account comes wi=
+            th access to Google products, apps, and serv Get a lighter, faster way to search =20 Search in a fast, fun, and easy way. Type l=
+            ess and save time by using your voice. =20 =20 Mor=
+            e from Google More apps from Google Con=
+            trol your account Choose what's right for you. Review and a=
+            djust your privacy and security settings any time. padding-left: 20px; padding-right: 20px; color:#80868B; font-family:Rob=
+            oto, OpenSans, Open Sans, Arial, sans-serif; font-weight: normal; font-size=
+            :16px; line-height:24px; text-align:left; padding-bottom:24px; word-break:n=
+            ormal;direction:ltr;" dir=3D"ltr" valign=3D"top"> Pinpoint=
+            your phone's location and secure it with Find My Device. =20 =20 =20 Visit the Help C=
+            enter to learn all about your new Google Account. =20 =
+            We hope you enjoy your new Android device, =
+            Google Community Team =
+            Replies to this email aren't monitored. If you have a question about yo=
+            ur new account, the Help Center likely has the answer you're looking fo=
+            r. YouTube We=E2=80=99re updating our = Terms of Service (=E2=80=9CTerms=E2=
+            =80=9D) to improve readability and transparency. This update does n=
+            ot change the Google Privacy Policy , nor the way we collect and process your data. We=E2=80=99ve provided a summary of key c=
+            hanges but here=E2=80=99s what you can expect: • Terms that are clearer =
+            and easier to understand with useful links to help you navigate YouTube and=
+            better understand our policies. • Expanded commitments to=
+            notify you about changes that may affect you, such as product updates or f=
+            uture changes to the Terms; and • Better alignment betwee=
+            n our Terms and how YouTube works today. The new Terms will t=
+            ake effect on 10 December, 2019. Please make sure you read the updated Terms carefully.<=
+            /strong> If you would like more information, you can find additional inform=
+            ation in our Help Cente=
+            r . If you allow your child to =
+            use YouTube Kids, then please note that you are agreeing to the new Terms o=
+            n behalf of your child as well. You can always review your =
+            privacy settings and manage how your data is used by visiting your Google Account . Thank you for bein=
+            g part of the YouTube community! =20 © 2019 =
+            Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043. You have received =
+            this mandatory service announcement to update you about important changes t=
+            o the YouTube Terms. --000000000000ee5fdc0596f875b8--
+            )
+        '''
         '''
             head>Sign-in =
             attempt was blocked Someone just used your pass=
@@ -383,19 +434,35 @@ imap_socket = IMAP()
 # print(folders)
 # for mailbox in mailboxes:
 #     imap_socket.Examine(mailbox)
-imap_socket.Examine('INBOX')
+imap_socket.Examine('"Sent Items"')
+# imap_socket.Examine('INBOX')
 # imap_socket.Examine('"[Gmail]/Important"')
 # imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
 # imap_socket.Noop() 
 imap_socket.fetch_complete_mail(1)
-# imap_socket.fetch_mail_header(1, 1)
-# imap_socket.fetch_html_body_content(1)
-# imap_socket.fetch_mail_body_structure(1, 8)
+# imap_socket.fetch_mail_header(1, 2)
+# imap_socket.fetch_html_body_content(3402)
 # imap_socket.fetch_plain_body_content(1)
 imap_socket.close_mailbox()
 imap_socket.Logout()
 imap_socket.close_connection()
+
+
+'''
+    References:
+
+    encodings: https://datatracker.ietf.org/doc/html/rfc4648.html#section-4
+
+    For Quoted-Printable strings: https://en.wikipedia.org/wiki/Quoted-printable
+
+    More on encodings: https://stackoverflow.com/questions/25710599/content-transfer-encoding-7bit-or-8-bit
+
+    how to decode QP encoded text: https://stackoverflow.com/questions/43824650/encoding-issue-decode-quoted-printable-string-in-python
+
+    MIME : Multipurpose Internet Mail Extensions (MIME) is an Internet standard that extends the format of email messages to support text in character sets other than ASCII, as well as attachments of audio, video, images, and application programs. Message bodies may consist of multiple parts, and header information may be specified in non-ASCII character sets. Email messages with MIME formatting are typically transmitted with standard protocols, such as the Simple Mail Transfer Protocol (SMTP), the Post Office Protocol (POP), and the Internet Message Access Protocol (IMAP). 
+
+'''
 
 '''
     SELECT
@@ -452,146 +519,3 @@ r'''
     S: A202 OK LIST completed
 '''
 
-
-
-'''
-    def capability(self):
-        code, response = self.send_cmd(self.CAPABILITY_CMD)
-        print(f'capability response: {response}')
-        if code != 'OK':
-            raise Exception('__CAPABILITY Error__')
-    
-    def start_TLS(self):
-        code, response = self.send_cmd(self.STARTTLS_CMD, True)
-        # print(f'STARTTLS response: {response}')
-        if code != 'OK':
-            raise Exception('__STARTTLS Error__')
-
-'''
-
-'''
-
-LAST Response
-
-    connection response: * OK Gimap ready for requests from 117.228.193.165 q13mb189540682pjq
-    connected to ('imap.gmail.com', 993) successfully!
-    Authenticated Successfully!
-    ['"INBOX"', '"[Gmail]/All Mail"', '"[Gmail]/Drafts"', '"[Gmail]/Important"', '"[Gmail]/Sent Mail"', '"[Gmail]/Spam"', '"[Gmail]/Starred"', '"[Gmail]/Trash"']
-    ['INBOX', 'All Mail', 'Drafts', 'Important', 'Sent Mail', 'Spam', 'Starred', 'Trash']
-    "INBOX"
-    SELECT response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing \*)] Flags permitted.
-    * OK [UIDVALIDITY 1] UIDs valid.
-    * 65 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 66] Predicted next UID.
-    * OK [HIGHESTMODSEQ 22748]
-    a002 OK [READ-WRITE] INBOX selected. (Success)
-
-    "[Gmail]/All Mail"
-    SELECT response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing \*)] Flags permitted.
-    * OK [UIDVALIDITY 12] UIDs valid.
-    * 88 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 97] Predicted next UID.
-    * OK [HIGHESTMODSEQ 22748]
-    a002 OK [READ-WRITE] [Gmail]/All Mail selected. (Success)
-
-    "[Gmail]/Drafts"
-    SELECT response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing \*)] Flags permitted.
-    * OK [UIDVALIDITY 6] UIDs valid.
-    * 0 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 7] Predicted next UID.
-    * OK [HIGHESTMODSEQ 22748]
-    a002 OK [READ-WRITE] [Gmail]/Drafts selected. (Success)
-
-    "[Gmail]/Important"
-    SELECT response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing \*)] Flags permitted.
-    * OK [UIDVALIDITY 9] UIDs valid.
-    * 8 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 9] Predicted next UID.
-    * OK [HIGHESTMODSEQ 22748]
-    a002 OK [READ-WRITE] [Gmail]/Important selected. (Success)
-
-    "[Gmail]/Sent Mail"
-    SELECT response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing \*)] Flags permitted.
-    * OK [UIDVALIDITY 5] UIDs valid.
-    * 23 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 24] Predicted next UID.
-    * OK [HIGHESTMODSEQ 22748]
-    a002 OK [READ-WRITE] [Gmail]/Sent Mail selected. (Success)
-
-    "[Gmail]/Spam"
-    SELECT response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing \*)] Flags permitted.
-    * OK [UIDVALIDITY 3] UIDs valid.
-    * 1 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 3] Predicted next UID.
-    * OK [HIGHESTMODSEQ 22748]
-    a002 OK [READ-WRITE] [Gmail]/Spam selected. (Success)
-
-    "[Gmail]/Starred"
-    SELECT response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing \*)] Flags permitted.
-    * OK [UIDVALIDITY 4] UIDs valid.
-    * 0 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 1] Predicted next UID.
-    * OK [HIGHESTMODSEQ 22748]
-    a002 OK [READ-WRITE] [Gmail]/Starred selected. (Success)
-
-    "[Gmail]/Trash"
-    SELECT response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing \*)] Flags permitted.
-    * OK [UIDVALIDITY 2] UIDs valid.
-    * 0 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 1] Predicted next UID.
-    * OK [HIGHESTMODSEQ 22748]
-    a002 OK [READ-WRITE] [Gmail]/Trash selected. (Success)
-
-    Logout Successfully!
-
-    Disconnected...
-
-'''
-
-
-'''
-    INBOX
-    EXAMINE response: * FLAGS (\Answered \Flagged \Draft \Deleted \Seen $NotPhishing $Phishing)
-    * OK [PERMANENTFLAGS ()] Flags permitted.
-    * OK [UIDVALIDITY 1] UIDs valid.
-    * 65 EXISTS
-    * 0 RECENT
-    * OK [UIDNEXT 66] Predicted next UID.
-    * OK [HIGHESTMODSEQ 24096]
-    a004 OK [READ-ONLY] INBOX selected. (Success)
-
-    FETCH response:
-    * 53 FETCH (FLAGS (\Seen) BODY[HEADER.FIELDS (DATE FROM)] {87}
-    Date: Thu, 08 Jul 2021 10:40:14 +0000
-    From: Rathina from Crio.Do <rathina@crio.in>
-
-    )
-    * 54 FETCH (FLAGS (\Seen) BODY[HEADER.FIELDS (DATE FROM)] {87}
-    Date: Fri, 09 Jul 2021 04:35:08 +0000
-    From: Rathina from Crio.Do <rathina@crio.in>
-
-    )
-    * 55 FETCH (FLAGS (\Seen) BODY[HEADER.FIELDS (DATE FROM)] {87}
-    Date: Fri, 09 Jul 2021 04:39:06 +0000
-    From: Rathina from Crio.Do <rathina@crio.in>
-
-    )
-    * 56 FETCH (FLAGS (\Seen) BODY[HEADER.FIELDS (DATE Fa225 OK Success
-    Logout Successfully!
-'''
