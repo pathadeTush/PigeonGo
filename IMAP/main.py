@@ -4,6 +4,7 @@ import os
 import time
 from bs4 import BeautifulSoup
 import quopri as QP
+import base64
 
 '''
     imap.gmail.com
@@ -211,18 +212,97 @@ class IMAP:
             raise Exception('__CLOSE Error__')
 
     # Fetch Envelope allows atmost 8 mail headers to be fetched
-    def fetch_mail_ENVELOPE(self, start_index, count = 1):
-        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (ENVELOPE)'
+    def fetch_mail_body_structure(self, start_index, count = 1):
+        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (BODYSTRUCTURE)'
         code, response = self.Send_CMD(cmd)
-        print(f'FETCH Body Structure response:\n {response}')
+        # print(f'FETCH Body Structure response:\n{response}')
         if code != 'OK':
             raise Exception('__FETCH Body Structure Error__')
+
+        _ = '* ' + str(start_index) + ' FETCH (BODYSTRUCTURE ('
+        response = response[len(_): ].split('a225')[0][:-2]
+        print(response + '\n')
+        # If body has only one part then add parantheses to make following code work
+        if response[0] != '(':
+            response = '(' + response
+            response += ')'
+        stack = []
+        body_parts = []
+        body_part = ''
+        for i in range(len(response)):
+            ch = response[i]
+            if ch == '(':
+                stack.append('(')
+                if len(stack) > 1:
+                    body_part += ' ( '
+            elif ch == ')' and len(stack):
+                stack.pop()
+                if len(stack) == 0:
+                    body_parts.append(body_part)
+                    body_part = ''
+                else:
+                    body_part += ' ) '
+            else:
+                if ch == '"':
+                    continue
+                body_part += ch
+
+        print(body_parts)
+        
+        items = []
+        for body_part in body_parts:
+            item = {}
+            body_part = body_part.lower().split(' ')
+            length = len(body_part)
+            idx = 0
+            while(idx < length):
+                ele = body_part[idx]
+                if ele == 'text':
+                    item['text'] = body_part[idx+1]
+                    idx += 1
+                elif ele == 'charset':
+                    item[ele] = body_part[idx+1]
+                    idx += 1
+                elif ele in ['7bit', '8bit', 'base64', 'quoted-printable']:
+                    item['content-transfer-encoding'] = body_part[idx]
+                    item['size'] = body_part[idx+1]
+                    idx += 1
+                elif ele == 'boundary':
+                    item[ele] = body_part[idx+1]
+                    break
+                elif ele == 'application':
+                    item[ele] = body_part[idx+1]
+                    idx += 1
+                elif ele == 'attachement':
+                    item[ele] = True
+                elif ele == 'filename':
+                    item[ele] = body_part[idx+1]
+                    idx += 1
+                idx += 1
+            items.append(item)
+
+        print(items)
+
 
         '''
             INBOX
 
             FETCH Body Structure response:
-            * 1 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") NIL NIL "BASE64" 4564 92 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "QUOTED-PRINTABLE" 38967 780 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "00000000000092f1030589e24b62") NIL NIL))a225 OK Success
+            * 1 FETCH (BODYSTRUCTURE 
+            (
+                ("TEXT" "PLAIN" 
+                    ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed")
+                    NIL NIL "BASE64" 4564 92 NIL NIL NIL
+                )
+                ("TEXT" "HTML" 
+                    ("CHARSET" "UTF-8")
+                    NIL NIL "QUOTED-PRINTABLE" 38967 780 NIL NIL NIL
+                )
+                "ALTERNATIVE" 
+                    ("BOUNDARY" "00000000000092f1030589e24b62") 
+                NIL NIL
+            )
+            )a225 OK Success
             CLOSE Response: a012 OK Returned to authenticated state. (Success)
         '''
         '''
@@ -237,15 +317,21 @@ class IMAP:
 
     # For outlook all header elementsa and content-type, content-transfer-encoding, Content-Description, Content-Disposition present in body part
     def fetch_complete_mail(self, start_index):
-        cmd = f'a225 FETCH {start_index} (FLAGS BODY[])' # Reference rfc imap doc page 57
-        code, response = self.Send_CMD(cmd)
-        print(f'FETCH response:\n{response}')
+        # cmd = f'a225 FETCH {start_index} (FLAGS BODY[])' # Reference rfc imap doc page 57
+        # code, response = self.Send_CMD(cmd)
+        # print(f'FETCH response:\n{response}')
         
-        # file = open('sent-mail-1.txt', 'w+')
-        # file.write(response)
-        # file.close()
-        if code != 'OK':
-            raise Exception('__FETCH Complete Mail Error__')
+        # # file = open('sent-mail-1.txt', 'w+')
+        # # file.write(response)
+        # # file.close()
+        # if code != 'OK':
+        #     raise Exception('__FETCH Complete Mail Error__')
+
+        self.__socket.send(f'a222 FETCH {start_index} (FLAGS BODY[1])\r\n'.encode())
+        self.__socket.settimeout(10)
+        response = self.__socket.recv(39000).decode()
+        print(response)
+        return
 
         is_multipart = False
         content_info = {}        
@@ -269,6 +355,7 @@ class IMAP:
                     if boundary_part[1: boundary_len+1].lower() == boundary:
                         content_info[boundary] = boundary_part[boundary_len+1: ][1:-1]
                         break
+                    # if boundary is on 1 line below and not on same line
                     else:
                         idx += 1
                         line = lines[idx].strip().split(';')[0]
@@ -299,24 +386,22 @@ class IMAP:
         # if body is multipart type 
         new_body_part = '--'+content_info[boundary]
         end_of_body = new_body_part + '--'
-        print(new_body_part, end_of_body)
         body_parts = []
         total_lines = len(lines)
         line = lines[idx].strip()
         while not line.startswith(end_of_body) and idx+1 < total_lines:
             if line.startswith(new_body_part):
-                print('======================yes')
                 body_part = {}
                 idx += 1
                 line = lines[idx].strip()
                 # Extract content-info for body part
                 while(len(line) != 0):
                     info = line.split(';')
-                    body_part[info[0].split(' ')[0]] = info[0].split(' ')[1]
+                    body_part[info[0].split(' ')[0].lower()] = info[0].split(' ')[1]
                     for i in range(1, len(info)):
                         _ = info[i].strip().split('=')
                         key, value = _[0], _[1]
-                        body_part[key] = value
+                        body_part[key.lower()] = value
                     idx += 1
                     line = lines[idx]
                 content = ''
@@ -334,11 +419,32 @@ class IMAP:
             else:
                 break
         
+        filePath = 'mail-bodies/' + str(self.selected_mailbox) + '-' + str(start_index) + '.'
+
         for body_part in body_parts:
-            print(body_part)
+            content = body_part['content:']
+            if body_part[content_type] == 'text/plain':
+                file = filePath + 'txt'
+            elif body_part[content_type] == 'text/html':
+                file = filePath + 'html'
+            else:
+                raise Exception(f'{body_part[content_type]} got')
+            if body_part[content_tr_en] == 'base64':
+                file = open(file, 'w+')
+                decoded_content = base64.b64decode(content).decode('utf-8')
+                file.write(decoded_content)
+                file.close()
+            elif body_part[content_tr_en] == 'quoted-printable':
+                file = open(file, 'w+')
+                # Reference: https://beautiful-soup-4.readthedocs.io/en/latest/#quick-start
+                parsed_data = BeautifulSoup(content, features='html.parser')
+                decoded_content = QP.decodestring(content).decode('utf-8')
+                file.write(decoded_content)
+                file.close()
+            else:
+                raise Exception(f'{body_part[content_tr_en]} got') 
 
         print(f'total body parts: {len(body_parts)}')    
-
 
 
     def fetch_mail_header(self, start_index, count):
@@ -404,83 +510,6 @@ class IMAP:
         print(content)
         # print(QP.decodestring(content).decode('utf-8'))
 
-        '''
-            for decompose/extract and stripped_strings
-
-            000000092f1030589e24b62
-            Content-Type: text/html; charset="UTF-8"
-            Content-Transfer-Encoding: quoted-printable =20
-                =20
-                =20
-            =20
-            =20 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
-            =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =C2=A0 =C2=A0 =
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=C2=A0 =
-            =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-            =A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-            =C2=A0=C2=A0 =C2=A0 =20 =
-            Hi tushar, Welcome to Google. Your new account comes wi=
-            th access to Google products, apps, and serv Get a lighter, faster way to search =20 Search in a fast, fun, and easy way. Type l=
-            ess and save time by using your voice. =20 =20 Mor=
-            e from Google More apps from Google Con=
-            trol your account Choose what's right for you. Review and a=
-            djust your privacy and security settings any time. padding-left: 20px; padding-right: 20px; color:#80868B; font-family:Rob=
-            oto, OpenSans, Open Sans, Arial, sans-serif; font-weight: normal; font-size=
-            :16px; line-height:24px; text-align:left; padding-bottom:24px; word-break:n=
-            ormal;direction:ltr;" dir=3D"ltr" valign=3D"top"> Pinpoint=
-            your phone's location and secure it with Find My Device. =20 =20 =20 Visit the Help C=
-            enter to learn all about your new Google Account. =20 =
-            We hope you enjoy your new Android device, =
-            Google Community Team =
-            Replies to this email aren't monitored. If you have a question about yo=
-            ur new account, the Help Center likely has the answer you're looking fo=
-            r. YouTube We=E2=80=99re updating our = Terms of Service (=E2=80=9CTerms=E2=
-            =80=9D) to improve readability and transparency. This update does n=
-            ot change the Google Privacy Policy , nor the way we collect and process your data. We=E2=80=99ve provided a summary of key c=
-            hanges but here=E2=80=99s what you can expect: • Terms that are clearer =
-            and easier to understand with useful links to help you navigate YouTube and=
-            better understand our policies. • Expanded commitments to=
-            notify you about changes that may affect you, such as product updates or f=
-            uture changes to the Terms; and • Better alignment betwee=
-            n our Terms and how YouTube works today. The new Terms will t=
-            ake effect on 10 December, 2019. Please make sure you read the updated Terms carefully.<=
-            /strong> If you would like more information, you can find additional inform=
-            ation in our Help Cente=
-            r . If you allow your child to =
-            use YouTube Kids, then please note that you are agreeing to the new Terms o=
-            n behalf of your child as well. You can always review your =
-            privacy settings and manage how your data is used by visiting your Google Account . Thank you for bein=
-            g part of the YouTube community! =20 © 2019 =
-            Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043. You have received =
-            this mandatory service announcement to update you about important changes t=
-            o the YouTube Terms. --000000000000ee5fdc0596f875b8--
-            )
-        '''
-        '''
-            head>Sign-in =
-            attempt was blocked Someone just used your pass=
-            word to try to sign in to your account from a non-Google app. Google blocke=
-            d them, but you should check what happened. Review your account activity to=
-            make sure no one else has access.Check activityYou can also se=
-            e securia225 OK Success
-        '''
     # Fetch content from plain/text mail body
     def fetch_plain_body_content(self, start_index, count = 1):
         cmd = f'a225 FETCH {start_index}:{start_index + count} (FLAGS BODY[TEXT])'
@@ -528,15 +557,16 @@ imap_socket = IMAP()
 # for mailbox in mailboxes:
 #     imap_socket.Examine(mailbox)
 # imap_socket.Examine('"Sent Items"')
-imap_socket.Examine('INBOX')
+# imap_socket.Examine('INBOX')
 # imap_socket.Examine('"[Gmail]/Important"')
-# imap_socket.Examine('"[Gmail]/Sent Mail"')
+imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
 # imap_socket.Noop() 
-imap_socket.fetch_complete_mail(40)
+# imap_socket.fetch_complete_mail(1)
 # imap_socket.fetch_mail_header(1, 2)
 # imap_socket.fetch_html_body_content(3402)
 # imap_socket.fetch_plain_body_content(1)
+imap_socket.fetch_mail_body_structure(26)
 imap_socket.close_mailbox()
 imap_socket.Logout()
 imap_socket.close_connection()
@@ -586,12 +616,50 @@ imap_socket.close_connection()
 '''
 
 '''
-    CREATE
+    FETCH Body Structure response:
+    * 1 FETCH 
+            (
+                BODYSTRUCTURE 
+                (
+                    ("TEXT" "PLAIN" 
+                        ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") 
+                        NIL NIL "BASE64" 4564 92 NIL NIL NIL
+                    )
+                    ("TEXT" "HTML" 
+                        ("CHARSET" "UTF-8") 
+                        NIL NIL "QUOTED-PRINTABLE" 38967 780 NIL NIL NIL
+                    ) 
+                    "ALTERNATIVE" 
+                    ("BOUNDARY" "00000000000092f1030589e24b62") 
+                    NIL NIL
+                )
+            )
+    * 2 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") NIL NIL "BASE64" 2274 46 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "QUOTED-PRINTABLE" 18212 365 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "000000000000ee5fdc0596f875b8") NIL NIL))
+    * 3 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") NIL NIL "BASE64" 672 14 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "QUOTED-PRINTABLE" 4590 92 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "000000000000d539d5059ad8f32f") NIL NIL))
+    * 4 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") NIL NIL "BASE64" 898 18 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "QUOTED-PRINTABLE" 4884 98 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "0000000000003da410059ad8f419") NIL NIL))
+    * 5 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") NIL NIL "BASE64" 836 17 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "QUOTED-PRINTABLE" 5097 102 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "00000000000041167b059ad8f40f") NIL NIL))
+    * 6 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "UTF-8" "DELSP" "yes" "FORMAT" "flowed") NIL NIL "BASE64" 2614 53 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "BASE64" 23678 474 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "0000000000003eaeeb059ad8f802") NIL NIL))
+    * 7 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "QUOTED-PRINTABLE" 3178 64 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "ascii") NIL NIL "QUOTED-PRINTABLE" 6775 136 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "6496099cfaaa454292ed19801a4c4245") NIL NIL))
+    * 8 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "QUOTED-PRINTABLE" 3682 74 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "ascii") NIL NIL "QUOTED-PRINTABLE" 15735 315 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "18549ad55ff346e2859b78f3c2f2525d") NIL NIL))
 
-    C: A003 CREATE owatagusiam/
-    S: A003 OK CREATE completed
-    C: A004 CREATE owatagusiam/blurdybloop
-    S: A004 OK CREATE completed
+    * 15 FETCH (BODYSTRUCTURE ("TEXT" "PLAIN" NIL NIL NIL "7BIT" 62 2 NIL NIL NIL))
+    * 16 FETCH (BODYSTRUCTURE ("TEXT" "PLAIN" NIL NIL NIL "7BIT" 64 2 NIL NIL NIL))
+    * 17 FETCH (BODYSTRUCTURE ("TEXT" "PLAIN" NIL NIL NIL "7BIT" 64 2 NIL NIL NIL))
+    * 18 FETCH (BODYSTRUCTURE ("TEXT" "PLAIN" NIL NIL NIL "7BIT" 64 2 NIL NIL NIL))
+    * 19 FETCH (BODYSTRUCTURE ("TEXT" "PLAIN" NIL NIL NIL "7BIT" 64 2 NIL NIL NIL))
+    * 20 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 60 2 NIL NIL NIL) "MIXED" ("BOUNDARY" "===============4313263700089492913==") NIL NIL))
+    * 21 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 60 2 NIL NIL NIL) "MIXED" ("BOUNDARY" "===============0953870309850649022==") NIL NIL))
+    * 22 FETCH (BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "us-ascii") NIL NIL "7BIT" 60 2 NIL NIL NIL)("APPLICATION" "OCTET-STREAM" NIL NIL NIL "BASE64" 34 NIL ("ATTACHEMENT" ("FILENAME" "attachment.txt")) NIL) "MIXED" ("BOUNDARY" "===============2810837026992375651==") NIL NIL))
+'''
+
+'''
+    for sent mail 26
+    
+    (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 24 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "0000000000005ff63b05cffc47c1") NIL NIL)("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "Timetable.txt") "<17cec9c74adba9d04031>" NIL "BASE64" 652 14 NIL ("ATTACHMENT" ("FILENAME" "Timetable.txt")) NIL)("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "WebPoints.txt") "<17cec9c925ada6f9d392>" NIL "BASE64" 1218 25 NIL ("ATTACHMENT" ("FILENAME" "WebPoints.txt")) NIL)("IMAGE" "PNG" ("NAME" "Screenshot_20211104-213931.png") "<17cec9cf8a6ad0c26313>" NIL "BASE64" 1374868 NIL ("ATTACHMENT" ("FILENAME" "Screenshot_20211104-213931.png")) NIL)("APPLICATION" "OCTET-STREAM" ("NAME" "student_info.py") "<17cec9d5c449ea5ad454>" NIL "BASE64" 2548 NIL ("ATTACHMENT" ("FILENAME" "student_info.py")) NIL) "MIXED" ("BOUNDARY" "0000000000005ff63d05cffc47c3") NIL NIL
+
+    [' ( TEXT PLAIN  ( CHARSET UTF-8 )  NIL NIL 7BIT 2 1 NIL NIL NIL )  ( TEXT HTML  ( CHARSET UTF-8 )  NIL NIL 7BIT 24 1 NIL NIL NIL )  ALTERNATIVE  ( BOUNDARY 0000000000005ff63b05cffc47c1 )  NIL NIL', 'TEXT PLAIN  ( CHARSET US-ASCII NAME Timetable.txt )  <17cec9c74adba9d04031> NIL BASE64 652 14 NIL  ( ATTACHMENT  ( FILENAME Timetable.txt )  )  NIL', 'TEXT PLAIN  ( CHARSET US-ASCII NAME WebPoints.txt )  <17cec9c925ada6f9d392> NIL BASE64 1218 25 NIL  ( ATTACHMENT  ( FILENAME WebPoints.txt )  )  NIL', 'IMAGE PNG  ( NAME Screenshot_20211104-213931.png )  <17cec9cf8a6ad0c26313> NIL BASE64 1374868 NIL  ( ATTACHMENT  ( FILENAME Screenshot_20211104-213931.png )  )  NIL', 'APPLICATION OCTET-STREAM  ( NAME student_info.py )  <17cec9d5c449ea5ad454> NIL BASE64 2548 NIL  ( ATTACHMENT  ( FILENAME student_info.py )  )  NIL', ' MIXED BOUNDARY 0000000000005ff63d05cffc47c3']
+
+    [{'text': 'html', 'charset': 'utf-8', 'content-transfer-encoding': '7bit', 'size': '24', 'boundary': '0000000000005ff63b05cffc47c1'}, {'text': 'plain', 'charset': 'us-ascii', 'content-transfer-encoding': 'base64', 'size': '652', 'filename': 'timetable.txt'}, {'text': 'plain', 'charset': 'us-ascii', 'content-transfer-encoding': 'base64', 'size': '1218', 'filename': 'webpoints.txt'}, {'content-transfer-encoding': 'base64', 'size': '1374868', 'filename': 'screenshot_20211104-213931.png'}, {'application': 'octet-stream', 'content-transfer-encoding': 'base64', 'size': '2548', 'filename': 'student_info.py'}, {'boundary': '0000000000005ff63d05cffc47c3'}]
 '''
 
 r'''
