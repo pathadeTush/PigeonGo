@@ -21,13 +21,13 @@ import quopri as QP
 
 class IMAP:
 
-    # email_id = os.environ.get('EMAIL_USER')
-    # email_pwd = os.environ.get('EMAIL_PASS')
-    email_id = os.environ.get('EMAIL_CLG_USER')
-    email_pwd = os.environ.get('EMAIL_CLG_PASS')
+    email_id = os.environ.get('EMAIL_USER')
+    email_pwd = os.environ.get('EMAIL_PASS')
+    # email_id = os.environ.get('EMAIL_CLG_USER')
+    # email_pwd = os.environ.get('EMAIL_CLG_PASS')
 
-    # HOST = 'imap.gmail.com'
-    HOST = 'outlook.office365.com'
+    HOST = 'imap.gmail.com'
+    # HOST = 'outlook.office365.com'
     PORT = 993
 
     CRLF = '\r\n'
@@ -241,11 +241,105 @@ class IMAP:
         code, response = self.Send_CMD(cmd)
         print(f'FETCH response:\n{response}')
         
-        file = open('inbox-1.txt', 'w+')
-        file.write(response)
-        file.close()
+        # file = open('sent-mail-1.txt', 'w+')
+        # file.write(response)
+        # file.close()
         if code != 'OK':
             raise Exception('__FETCH Complete Mail Error__')
+
+        is_multipart = False
+        content_info = {}        
+        content_type = 'content-type:'
+        content_type_len = len(content_type)
+        content_tr_en = 'content-transfer-encoding:'
+        content_tr_en_len = len(content_tr_en)
+        boundary = 'boundary='
+        boundary_len = len(boundary)
+        lines = response.splitlines()
+        idx = 0
+        for line in lines:
+            line = line.strip()
+            if line.lower().startswith(content_type):
+                content_info[content_type] = line[content_type_len+1:].split(';')[0]
+                type = content_info[content_type].split('/')
+                if type[0].lower() == 'multipart':
+                    is_multipart = True
+                if is_multipart:
+                    boundary_part = line.split(';')[1]
+                    if boundary_part[1: boundary_len+1].lower() == boundary:
+                        content_info[boundary] = boundary_part[boundary_len+1: ][1:-1]
+                        break
+                    else:
+                        idx += 1
+                        line = lines[idx].strip().split(';')[0]
+                        _ = line[: boundary_len]
+                        if _.lower() == boundary:
+                            content_info[boundary] = line[boundary_len+1: ][1:-1]
+                            break
+            elif line.lower().startswith(content_tr_en):
+                content_info[content_tr_en] = line[content_tr_en_len+1:].strip()
+            # If blank line appears or first body part ends    
+            if len(line) == 0:
+                idx += 1
+                break
+            idx += 1
+        print(content_info)
+
+        # if body is not multipart type
+        if not is_multipart:
+            content = ''
+            while idx+1 < len(lines):
+                line = lines[idx].strip()
+                content += line +'\n'
+                idx += 1
+            print(f'content: {content}')
+            return
+
+
+        # if body is multipart type 
+        new_body_part = '--'+content_info[boundary]
+        end_of_body = new_body_part + '--'
+        print(new_body_part, end_of_body)
+        body_parts = []
+        total_lines = len(lines)
+        line = lines[idx].strip()
+        while not line.startswith(end_of_body) and idx+1 < total_lines:
+            if line.startswith(new_body_part):
+                print('======================yes')
+                body_part = {}
+                idx += 1
+                line = lines[idx].strip()
+                # Extract content-info for body part
+                while(len(line) != 0):
+                    info = line.split(';')
+                    body_part[info[0].split(' ')[0]] = info[0].split(' ')[1]
+                    for i in range(1, len(info)):
+                        _ = info[i].strip().split('=')
+                        key, value = _[0], _[1]
+                        body_part[key] = value
+                    idx += 1
+                    line = lines[idx]
+                content = ''
+                idx += 1
+                line = lines[idx].strip()
+                while(not line.startswith(new_body_part) and not line.startswith(end_of_body)):
+                    content += line +'\n'
+                    idx += 1
+                    line = lines[idx].strip()
+                body_part['content:'] = content
+                body_parts.append(body_part)
+            elif idx+1 < total_lines:
+                idx += 1
+                line = lines[idx]
+            else:
+                break
+        
+        for body_part in body_parts:
+            print(body_part)
+
+        print(f'total body parts: {len(body_parts)}')    
+
+
 
     def fetch_mail_header(self, start_index, count):
         # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
@@ -292,7 +386,6 @@ class IMAP:
 
             Content-Type: multipart/alternative; boundary="0000000000003eaeeb059ad8f802"  (for important, Inbox)
         '''
-
 
     # Fetch mail body and extract content with mail body of html type
     def fetch_html_body_content(self, start_index, count = 1):
@@ -434,13 +527,13 @@ imap_socket = IMAP()
 # print(folders)
 # for mailbox in mailboxes:
 #     imap_socket.Examine(mailbox)
-imap_socket.Examine('"Sent Items"')
-# imap_socket.Examine('INBOX')
+# imap_socket.Examine('"Sent Items"')
+imap_socket.Examine('INBOX')
 # imap_socket.Examine('"[Gmail]/Important"')
 # imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
 # imap_socket.Noop() 
-imap_socket.fetch_complete_mail(1)
+imap_socket.fetch_complete_mail(40)
 # imap_socket.fetch_mail_header(1, 2)
 # imap_socket.fetch_html_body_content(3402)
 # imap_socket.fetch_plain_body_content(1)

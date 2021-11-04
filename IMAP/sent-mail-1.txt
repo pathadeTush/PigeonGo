@@ -1,4 +1,15 @@
-ent-Transfer-Encoding: 7bit
+* 1 FETCH (FLAGS (\Seen) BODY[] {1052}
+Return-Path: <pathadetushar2@gmail.com>
+Received: from [127.0.1.1] ([117.233.122.76])
+        by smtp.googlemail.com with ESMTPSA id c21sm3429394pfo.91.2021.04.11.00.31.34
+        for <tusharpathade475@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Sun, 11 Apr 2021 00:31:36 -0700 (PDT)
+From: pathadetushar2@gmail.com
+X-Google-Original-From: noreply@demo.com
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Subject: Password Reset Request
 To: tusharpathade475@gmail.com
 Date: Sun, 11 Apr 2021 13:01:33 +0530
@@ -8,13 +19,4 @@ Message-ID:
 To reset your password, visit the following link:
 http://127.0.0.1:5000/reset_password/eyJhbGciOiJIUzUxMiIsImlhdCI6MTYxODEyNjI4NCwiZXhwIjoxNjE4MTI4MDg0fQ.eyJ1c2VyX2lkIjo2fQ.M28Oxd1W-rg3zWeo7PtVFbAYhhackBQlNNxFMO1eCORBt2wk2NeDPkmwVDtL0Npfg1pam8vwVOpTLQVHaj58_g
 If you did not make this request then simply ignore this email and no changes will be made.
-)
-* 2 FETCH (FLAGS (\Seen) BODY[] {1087}
-Return-Path: <pathadetushar2@gmail.com>
-Received: from [127.0.1.1] ([117.233.90.171])
-        by smtp.googlemail.com with ESMTPSA id g18sm10274492pfi.199.2021.06.13.11.19.54
-        for <tusharpathade475@gmail.com>
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Sun, 13 Jun 2021 11:19:56 -0700 (PDT)
-From: pathadetushar2@gmail.com
-X-Google-Original-From: noreply@dema225 OK Success
+)a225 OK Success
