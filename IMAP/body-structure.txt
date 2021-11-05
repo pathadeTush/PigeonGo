@@ -1,0 +1,60 @@
+* 26 FETCH (BODYSTRUCTURE 
+(
+   (
+      ("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)
+      ("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 24 1 NIL NIL NIL) "ALTERNATIVE" 
+      ("BOUNDARY" "0000000000005ff63b05cffc47c1") NIL NIL
+   )
+   (
+      "TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "Timetable.txt") "<17cec9c74adba9d04031>" NIL "BASE64" 652 14 NIL ("ATTACHMENT" ("FILENAME" "Timetable.txt")) NIL
+   )
+   (
+      "TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "WebPoints.txt") "<17cec9c925ada6f9d392>" NIL "BASE64" 1218 25 NIL ("ATTACHMENT" ("FILENAME" "WebPoints.txt")) NIL
+   )
+   (
+      "IMAGE" "PNG" ("NAME" "Screenshot_20211104-213931.png") "<17cec9cf8a6ad0c26313>" NIL "BASE64" 1374868 NIL ("ATTACHMENT" ("FILENAME" "Screenshot_20211104-213931.png")) NIL
+   )
+   (
+      "APPLICATION" "OCTET-STREAM" ("NAME" "student_info.py") "<17cec9d5c449ea5ad454>" NIL "BASE64" 2548 NIL ("ATTACHMENT" ("FILENAME" "student_info.py")) NIL
+   ) 
+   "MIXED" ("BOUNDARY" "0000000000005ff63d05cffc47c3") NIL NIL
+)   
+)
+
+*
+26
+FETCH
+(
+  BODYSTRUCTURE
+  (
+    [1] (
+      [1.1] ("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)
+      [1.2] ("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 24 1 NIL NIL NIL)
+      "ALTERNATIVE"
+      ("BOUNDARY" "0000000000005ff63b05cffc47c1")
+      NIL
+      NIL
+    )
+    [2] ("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "Timetable.txt") "<17cec9c74adba9d04031>" NIL "BASE...
+    [3] ("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "WebPoints.txt") "<17cec9c925ada6f9d392>" NIL "BASE...
+    [4] ("IMAGE" "PNG" ("NAME" "Screenshot_20211104-213931.png") "<17cec9cf8a6ad0c26313>" NIL "BASE64" 1...
+    [5] ("APPLICATION" "OCTET-STREAM" ("NAME" "student_info.py") "<17cec9d5c449ea5ad454>" NIL "BASE64" 2...
+    "MIXED"
+    ("BOUNDARY" "0000000000005ff63d05cffc47c3")
+    NIL
+    NIL
+  )
+)
+
+
+{'1.1': {'attachment': False, 'text': 'plain', 'charset': 'utf-8', 'content-transfer-encoding': '7bit', 'size': '2'}}
+
+{'1.2': {'attachment': False, 'text': 'html', 'charset': 'utf-8', 'content-transfer-encoding': '7bit', 'size': '24'}}
+
+{'2': {'attachment': True, 'text': 'plain', 'charset': 'us-ascii', 'content-transfer-encoding': 'base64', 'size': '652', 'filename': 'timetable.txt'}}
+
+{'3': {'attachment': True, 'text': 'plain', 'charset': 'us-ascii', 'content-transfer-encoding': 'base64', 'size': '1218', 'filename': 'webpoints.txt'}}
+
+{'4': {'attachment': True, 'image': 'png', 'content-transfer-encoding': 'base64', 'size': '1374868', 'filename': 'screenshot_20211104-213931.png'}}
+
+{'5': {'attachment': True, 'application': 'octet-stream', 'content-transfer-encoding': 'base64', 'size': '2548', 'filename': 'student_info.py'}}

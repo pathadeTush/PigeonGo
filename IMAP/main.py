@@ -173,7 +173,7 @@ class IMAP:
             ['Archive', 'Calendar', 'Calendar/Birthdays', '"Calendar/India holidays"', '"Calendar/United Kingdom holidays"', 'Contacts', '"Conversation History"', '"Deleted Items"', 'Drafts', 'INBOX', 'Journal', '"Junk Email"', 'Notes', 'Outbox', '"Sent Items"', 'Tasks']
         '''
 
-    # Open Mailbox
+    # Open Mailbox (Read/Write)
     def Select(self, mailbox):
         SELECT_CMD = f'a003 SELECT {mailbox}'
         code, response = self.Send_CMD(SELECT_CMD)
@@ -183,7 +183,7 @@ class IMAP:
             raise Exception('__SELECT Error__')
         self.selected_mailbox = mailbox
     
-    # Read Mailbox
+    # Read Mailbox (Read Only)
     def Examine(self, mailbox):
         EXAMINE_CMD = f'a004 EXAMINE {mailbox}'
         code, response = self.Send_CMD(EXAMINE_CMD)
@@ -211,24 +211,75 @@ class IMAP:
         if code != 'OK':
             raise Exception('__CLOSE Error__')
 
-    # Fetch Envelope allows atmost 8 mail headers to be fetched
-    def fetch_mail_body_structure(self, start_index, count = 1):
-        cmd = f'a225 FETCH {start_index}:{start_index + count - 1} (BODYSTRUCTURE)'
+    def parse_body_structure(self, bodies, item, no, index, level):
+        if level > 0:
+            decimal_part = (1 / 10**(level))
+            int_part_len = len(str(no).split('.')[0])
+            no += decimal_part
+            no = round(no, int_part_len + level)
+           
+        ans = {}
+        split_arr = item.split(' ')
+        length = len(split_arr)
+        i = index
+        ans['attachment'] = False
+        ans['text'] = False
+        valid = True
+        while(i < length):
+            ele = split_arr[i] 
+            # print(ele)
+            if ele == '(':
+                if split_arr[i+1] in ['text', 'image', 'application', '(']:
+                    res, no, i = self.parse_body_structure(bodies, item, no, i+1, level+1)
+            elif ele in ['text', 'image', 'application']:
+                ans[ele] = split_arr[i+1]
+                i += 1
+            elif ele in ['7bit', '8bit', 'base64', 'quoted-printable']:
+                ans['content-transfer-encoding'] = ele
+                ans['size'] = split_arr[i+1]
+                i += 1
+            elif ele == 'charset':
+                ans[ele] = split_arr[i+1]
+                i += 1
+            elif ele == 'attachment':
+                ans[ele] = True
+            elif ele == 'filename':
+                ans[ele] = split_arr[i+1]
+                i += 1
+            elif ele in ['alternative', 'related', 'mixed']:
+                valid = False
+                break
+            elif ele == ')' and split_arr[i-1] == 'nil':
+                break
+            i += 1
+        
+        res = {}
+        if valid:
+            res[str(no)] = ans
+            bodies.append(res)
+        # print(res)
+        return res, no, i
+
+    def fetch_body_structure(self, start_index):
+        cmd = f'a225 FETCH {start_index} (BODYSTRUCTURE)'
         code, response = self.Send_CMD(cmd)
-        # print(f'FETCH Body Structure response:\n{response}')
+        print(f'FETCH Body Structure response:\n{response}')
         if code != 'OK':
             raise Exception('__FETCH Body Structure Error__')
 
         _ = '* ' + str(start_index) + ' FETCH (BODYSTRUCTURE ('
         response = response[len(_): ].split('a225')[0][:-2]
-        print(response + '\n')
+        # print(response + '\n')
         # If body has only one part then add parantheses to make following code work
         if response[0] != '(':
             response = '(' + response
             response += ')'
+
+        # Separate each item of body structure 
         stack = []
         body_parts = []
         body_part = ''
+        response = response.lower()
         for i in range(len(response)):
             ch = response[i]
             if ch == '(':
@@ -247,42 +298,77 @@ class IMAP:
                     continue
                 body_part += ch
 
-        print(body_parts)
-        
-        items = []
-        for body_part in body_parts:
-            item = {}
-            body_part = body_part.lower().split(' ')
-            length = len(body_part)
-            idx = 0
-            while(idx < length):
-                ele = body_part[idx]
-                if ele == 'text':
-                    item['text'] = body_part[idx+1]
-                    idx += 1
-                elif ele == 'charset':
-                    item[ele] = body_part[idx+1]
-                    idx += 1
-                elif ele in ['7bit', '8bit', 'base64', 'quoted-printable']:
-                    item['content-transfer-encoding'] = body_part[idx]
-                    item['size'] = body_part[idx+1]
-                    idx += 1
-                elif ele == 'boundary':
-                    item[ele] = body_part[idx+1]
-                    break
-                elif ele == 'application':
-                    item[ele] = body_part[idx+1]
-                    idx += 1
-                elif ele == 'attachement':
-                    item[ele] = True
-                elif ele == 'filename':
-                    item[ele] = body_part[idx+1]
-                    idx += 1
-                idx += 1
-            items.append(item)
+        bodies = []
+        for no, body_part in enumerate(body_parts):
+            self.parse_body_structure(bodies, body_part, no+1, 0, 0)
 
-        print(items)
-
+        # Extract Mail Text and Download Attachments
+        for body in bodies:
+            for key in body:
+                try:
+                    body_part_no = int(key)
+                except:
+                    body_part_no = float(key)
+                body_part = body[key]
+                content = self.fetch_body_part(start_index, body_part_no)
+                if body_part['attachment']:
+                    filePath = 'downloads/' + str(start_index) + '-' + body_part['filename']
+                    binary = False
+                    if body_part['text']:
+                        file = open(filePath, 'w+')
+                    else: # binary file
+                        file = open(filePath, 'wb')
+                        binary = True
+                    encoding = body_part['content-transfer-encoding']
+                    if encoding in ['7bit', '8bit']:
+                        file.write(content)
+                        file.close()
+                    elif encoding == 'base64':
+                        decoded_content = base64.b64decode(content)
+                        # Binary files don't required data in byte
+                        if binary:
+                            file.write(decoded_content)
+                        else:
+                            file.write(decoded_content.decode('utf-8'))
+                        file.close()
+                    elif encoding == 'quoted-printable':
+                        decoded_content = QP.decodestring(content)
+                        if binary:
+                            file.write(decoded_content)
+                        else:
+                            file.write(decoded_content.decode('utf-8'))
+                        file.close()
+                    else:
+                        print(f'Unknown encoding: {encoding}')
+                        break
+                elif body_part['text']:
+                    filePath = 'downloads/'+ str(start_index) + '-'
+                    if body_part['text'] == 'plain':
+                        filePath += 'data.txt'
+                        file = open(filePath, 'w+')
+                    elif body_part['text'] == 'html':
+                        filePath += 'data.html'
+                        file = open(filePath, 'w+')
+                    else:
+                        print(f'Unknown text format: {body_part['text']}')
+                        break
+                    encoding = body_part['content-transfer-encoding']
+                    if encoding in ['7bit', '8bit']:
+                        file.write(content)
+                        file.close()
+                    elif encoding == 'base64':
+                        decoded_content = base64.b64decode(content).decode('utf-8')
+                        file.write(decoded_content)
+                        file.close()
+                    elif encoding == 'quoted-printable':
+                        decoded_content = QP.decodestring(content).decode('utf-8')
+                        file.write(decoded_content)
+                        file.close()
+                    else:
+                        print(f'Unknown encoding: {encoding}')
+                        break
+                break
+                    
 
         '''
             INBOX
@@ -315,137 +401,27 @@ class IMAP:
             * 1 FETCH (INTERNALDATE "27-May-2019 17:58:43 +0000")a225 OK Success
         '''
 
-    # For outlook all header elementsa and content-type, content-transfer-encoding, Content-Description, Content-Disposition present in body part
-    def fetch_complete_mail(self, start_index):
-        # cmd = f'a225 FETCH {start_index} (FLAGS BODY[])' # Reference rfc imap doc page 57
-        # code, response = self.Send_CMD(cmd)
+    def fetch_body_part(self, start_index, body_part_no):
+        print(body_part_no)
+        cmd = f'a225 FETCH {start_index} (FLAGS BODY[{body_part_no}])' # Reference rfc imap doc page 57
+        code, response = self.Send_CMD(cmd)
         # print(f'FETCH response:\n{response}')
         
-        # # file = open('sent-mail-1.txt', 'w+')
-        # # file.write(response)
-        # # file.close()
-        # if code != 'OK':
-        #     raise Exception('__FETCH Complete Mail Error__')
-
-        self.__socket.send(f'a222 FETCH {start_index} (FLAGS BODY[1])\r\n'.encode())
-        self.__socket.settimeout(10)
-        response = self.__socket.recv(39000).decode()
-        print(response)
-        return
-
-        is_multipart = False
-        content_info = {}        
-        content_type = 'content-type:'
-        content_type_len = len(content_type)
-        content_tr_en = 'content-transfer-encoding:'
-        content_tr_en_len = len(content_tr_en)
-        boundary = 'boundary='
-        boundary_len = len(boundary)
-        lines = response.splitlines()
-        idx = 0
-        for line in lines:
-            line = line.strip()
-            if line.lower().startswith(content_type):
-                content_info[content_type] = line[content_type_len+1:].split(';')[0]
-                type = content_info[content_type].split('/')
-                if type[0].lower() == 'multipart':
-                    is_multipart = True
-                if is_multipart:
-                    boundary_part = line.split(';')[1]
-                    if boundary_part[1: boundary_len+1].lower() == boundary:
-                        content_info[boundary] = boundary_part[boundary_len+1: ][1:-1]
-                        break
-                    # if boundary is on 1 line below and not on same line
-                    else:
-                        idx += 1
-                        line = lines[idx].strip().split(';')[0]
-                        _ = line[: boundary_len]
-                        if _.lower() == boundary:
-                            content_info[boundary] = line[boundary_len+1: ][1:-1]
-                            break
-            elif line.lower().startswith(content_tr_en):
-                content_info[content_tr_en] = line[content_tr_en_len+1:].strip()
-            # If blank line appears or first body part ends    
-            if len(line) == 0:
-                idx += 1
-                break
-            idx += 1
-        print(content_info)
-
-        # if body is not multipart type
-        if not is_multipart:
-            content = ''
-            while idx+1 < len(lines):
-                line = lines[idx].strip()
-                content += line +'\n'
-                idx += 1
-            print(f'content: {content}')
-            return
-
-
-        # if body is multipart type 
-        new_body_part = '--'+content_info[boundary]
-        end_of_body = new_body_part + '--'
-        body_parts = []
-        total_lines = len(lines)
-        line = lines[idx].strip()
-        while not line.startswith(end_of_body) and idx+1 < total_lines:
-            if line.startswith(new_body_part):
-                body_part = {}
-                idx += 1
-                line = lines[idx].strip()
-                # Extract content-info for body part
-                while(len(line) != 0):
-                    info = line.split(';')
-                    body_part[info[0].split(' ')[0].lower()] = info[0].split(' ')[1]
-                    for i in range(1, len(info)):
-                        _ = info[i].strip().split('=')
-                        key, value = _[0], _[1]
-                        body_part[key.lower()] = value
-                    idx += 1
-                    line = lines[idx]
-                content = ''
-                idx += 1
-                line = lines[idx].strip()
-                while(not line.startswith(new_body_part) and not line.startswith(end_of_body)):
-                    content += line +'\n'
-                    idx += 1
-                    line = lines[idx].strip()
-                body_part['content:'] = content
-                body_parts.append(body_part)
-            elif idx+1 < total_lines:
-                idx += 1
-                line = lines[idx]
-            else:
-                break
+        if code != 'OK':
+            raise Exception('__FETCH Complete Mail Error__')
         
-        filePath = 'mail-bodies/' + str(self.selected_mailbox) + '-' + str(start_index) + '.'
-
-        for body_part in body_parts:
-            content = body_part['content:']
-            if body_part[content_type] == 'text/plain':
-                file = filePath + 'txt'
-            elif body_part[content_type] == 'text/html':
-                file = filePath + 'html'
-            else:
-                raise Exception(f'{body_part[content_type]} got')
-            if body_part[content_tr_en] == 'base64':
-                file = open(file, 'w+')
-                decoded_content = base64.b64decode(content).decode('utf-8')
-                file.write(decoded_content)
-                file.close()
-            elif body_part[content_tr_en] == 'quoted-printable':
-                file = open(file, 'w+')
-                # Reference: https://beautiful-soup-4.readthedocs.io/en/latest/#quick-start
-                parsed_data = BeautifulSoup(content, features='html.parser')
-                decoded_content = QP.decodestring(content).decode('utf-8')
-                file.write(decoded_content)
-                file.close()
-            else:
-                raise Exception(f'{body_part[content_tr_en]} got') 
-
-        print(f'total body parts: {len(body_parts)}')    
-
+        # Remove first line - it is a command itself
+        for i in range(len(response)):
+            if response[i] == '\n':
+                response = response[i+1:]
+                break
+        # Take response before character ')'
+        for i in range(len(response)-1, -1, -1):
+            if response[i] == ')':
+                response = response[ :i]
+                break
+        # print(response)
+        return response
 
     def fetch_mail_header(self, start_index, count):
         # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
@@ -493,42 +469,6 @@ class IMAP:
             Content-Type: multipart/alternative; boundary="0000000000003eaeeb059ad8f802"  (for important, Inbox)
         '''
 
-    # Fetch mail body and extract content with mail body of html type
-    def fetch_html_body_content(self, start_index, count = 1):
-        cmd = f'a225 FETCH {start_index}:{start_index + count} (FLAGS BODY[TEXT])'
-        code, response = self.Send_CMD(cmd)
-        # print(f'FETCH Body Text response:\n {response}')
-        if code != 'OK':
-            raise Exception('__FETCH Body Text Error__')
-        
-        # To extract content from html format data
-        # Reference: https://beautiful-soup-4.readthedocs.io/en/latest/#quick-start
-        parsed_data = BeautifulSoup(response, features="html.parser")
-        for s in parsed_data(['script', 'style']):
-            s.decompose()
-        content = ' '.join(parsed_data.stripped_strings)
-        print(content)
-        # print(QP.decodestring(content).decode('utf-8'))
-
-    # Fetch content from plain/text mail body
-    def fetch_plain_body_content(self, start_index, count = 1):
-        cmd = f'a225 FETCH {start_index}:{start_index + count} (FLAGS BODY[TEXT])'
-        code, response = self.Send_CMD(cmd)
-        print(f'fetch plain body content response ...\n{response}')
-        if code != 'OK':
-            raise Exception('__Fetch Error__')
-        
-        if response[:3] == f'* {start_index}':
-            response = response.splitlines()
-            length = len(response)
-            content = ''
-            for i in range(1, length):
-                if response[i] == ')':
-                    break
-                content += response[i] + '\n'
-
-        print('response............')
-        print(content)
 
     ''' Any State Functions '''
 
@@ -562,11 +502,11 @@ imap_socket = IMAP()
 imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
 # imap_socket.Noop() 
-# imap_socket.fetch_complete_mail(1)
+# imap_socket.fetch_body_part(26, 5)
 # imap_socket.fetch_mail_header(1, 2)
 # imap_socket.fetch_html_body_content(3402)
 # imap_socket.fetch_plain_body_content(1)
-imap_socket.fetch_mail_body_structure(26)
+imap_socket.fetch_body_structure(26)
 imap_socket.close_mailbox()
 imap_socket.Logout()
 imap_socket.close_connection()
@@ -582,6 +522,8 @@ imap_socket.close_connection()
     More on encodings: https://stackoverflow.com/questions/25710599/content-transfer-encoding-7bit-or-8-bit
 
     how to decode QP encoded text: https://stackoverflow.com/questions/43824650/encoding-issue-decode-quoted-printable-string-in-python
+
+    More on Body Structure: http://sgerwk.altervista.org/imapbodystructure.html
 
     MIME : Multipurpose Internet Mail Extensions (MIME) is an Internet standard that extends the format of email messages to support text in character sets other than ASCII, as well as attachments of audio, video, images, and application programs. Message bodies may consist of multiple parts, and header information may be specified in non-ASCII character sets. Email messages with MIME formatting are typically transmitted with standard protocols, such as the Simple Mail Transfer Protocol (SMTP), the Post Office Protocol (POP), and the Internet Message Access Protocol (IMAP). 
 
@@ -655,11 +597,29 @@ imap_socket.close_connection()
 '''
     for sent mail 26
     
-    (("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 24 1 NIL NIL NIL) "ALTERNATIVE" ("BOUNDARY" "0000000000005ff63b05cffc47c1") NIL NIL)("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "Timetable.txt") "<17cec9c74adba9d04031>" NIL "BASE64" 652 14 NIL ("ATTACHMENT" ("FILENAME" "Timetable.txt")) NIL)("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "WebPoints.txt") "<17cec9c925ada6f9d392>" NIL "BASE64" 1218 25 NIL ("ATTACHMENT" ("FILENAME" "WebPoints.txt")) NIL)("IMAGE" "PNG" ("NAME" "Screenshot_20211104-213931.png") "<17cec9cf8a6ad0c26313>" NIL "BASE64" 1374868 NIL ("ATTACHMENT" ("FILENAME" "Screenshot_20211104-213931.png")) NIL)("APPLICATION" "OCTET-STREAM" ("NAME" "student_info.py") "<17cec9d5c449ea5ad454>" NIL "BASE64" 2548 NIL ("ATTACHMENT" ("FILENAME" "student_info.py")) NIL) "MIXED" ("BOUNDARY" "0000000000005ff63d05cffc47c3") NIL NIL
+    (
+        ("TEXT" "PLAIN" ("CHARSET" "UTF-8") NIL NIL "7BIT" 2 1 NIL NIL NIL)
+        ("TEXT" "HTML" ("CHARSET" "UTF-8") NIL NIL "7BIT" 24 1 NIL NIL NIL) 
+        "ALTERNATIVE" ("BOUNDARY" "0000000000005ff63b05cffc47c1") NIL NIL)
+        ("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "Timetable.txt") "<17cec9c74adba9d04031>" NIL "BASE64" 652 14 NIL ("ATTACHMENT" ("FILENAME" "Timetable.txt")) NIL)
+        ("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "WebPoints.txt") "<17cec9c925ada6f9d392>" NIL "BASE64" 1218 25 NIL ("ATTACHMENT" ("FILENAME" "WebPoints.txt")) NIL)("IMAGE" "PNG" ("NAME" "Screenshot_20211104-213931.png") "<17cec9cf8a6ad0c26313>" NIL "BASE64" 1374868 NIL ("ATTACHMENT" ("FILENAME" "Screenshot_20211104-213931.png")) NIL)("APPLICATION" "OCTET-STREAM" ("NAME" "student_info.py") "<17cec9d5c449ea5ad454>" NIL "BASE64" 2548 NIL ("ATTACHMENT" ("FILENAME" "student_info.py")) NIL) "MIXED" ("BOUNDARY" "0000000000005ff63d05cffc47c3") NIL NIL
 
-    [' ( TEXT PLAIN  ( CHARSET UTF-8 )  NIL NIL 7BIT 2 1 NIL NIL NIL )  ( TEXT HTML  ( CHARSET UTF-8 )  NIL NIL 7BIT 24 1 NIL NIL NIL )  ALTERNATIVE  ( BOUNDARY 0000000000005ff63b05cffc47c1 )  NIL NIL', 'TEXT PLAIN  ( CHARSET US-ASCII NAME Timetable.txt )  <17cec9c74adba9d04031> NIL BASE64 652 14 NIL  ( ATTACHMENT  ( FILENAME Timetable.txt )  )  NIL', 'TEXT PLAIN  ( CHARSET US-ASCII NAME WebPoints.txt )  <17cec9c925ada6f9d392> NIL BASE64 1218 25 NIL  ( ATTACHMENT  ( FILENAME WebPoints.txt )  )  NIL', 'IMAGE PNG  ( NAME Screenshot_20211104-213931.png )  <17cec9cf8a6ad0c26313> NIL BASE64 1374868 NIL  ( ATTACHMENT  ( FILENAME Screenshot_20211104-213931.png )  )  NIL', 'APPLICATION OCTET-STREAM  ( NAME student_info.py )  <17cec9d5c449ea5ad454> NIL BASE64 2548 NIL  ( ATTACHMENT  ( FILENAME student_info.py )  )  NIL', ' MIXED BOUNDARY 0000000000005ff63d05cffc47c3']
+    [' 
+        ( TEXT PLAIN  ( CHARSET UTF-8 )  NIL NIL 7BIT 2 1 NIL NIL NIL )  
+        ( TEXT HTML  ( CHARSET UTF-8 )  NIL NIL 7BIT 24 1 NIL NIL NIL )  ALTERNATIVE  ( BOUNDARY 0000000000005ff63b05cffc47c1 )  NIL NIL', 
+        'TEXT PLAIN  ( CHARSET US-ASCII NAME Timetable.txt )  <17cec9c74adba9d04031> NIL BASE64 652 14 NIL  ( ATTACHMENT  ( FILENAME Timetable.txt )  )  NIL'
+        , 'TEXT PLAIN  ( CHARSET US-ASCII NAME WebPoints.txt )  <17cec9c925ada6f9d392> NIL BASE64 1218 25 NIL  ( ATTACHMENT  ( FILENAME WebPoints.txt )  )  NIL'
+        , 'IMAGE PNG  ( NAME Screenshot_20211104-213931.png )  <17cec9cf8a6ad0c26313> NIL BASE64 1374868 NIL  ( ATTACHMENT  ( FILENAME Screenshot_20211104-213931.png )  )  NIL'
+        , 'APPLICATION OCTET-STREAM  ( NAME student_info.py )  <17cec9d5c449ea5ad454> NIL BASE64 2548 NIL  ( ATTACHMENT  ( FILENAME student_info.py )  )  NIL'
+        , ' MIXED BOUNDARY 0000000000005ff63d05cffc47c3'
+    ]
 
-    [{'text': 'html', 'charset': 'utf-8', 'content-transfer-encoding': '7bit', 'size': '24', 'boundary': '0000000000005ff63b05cffc47c1'}, {'text': 'plain', 'charset': 'us-ascii', 'content-transfer-encoding': 'base64', 'size': '652', 'filename': 'timetable.txt'}, {'text': 'plain', 'charset': 'us-ascii', 'content-transfer-encoding': 'base64', 'size': '1218', 'filename': 'webpoints.txt'}, {'content-transfer-encoding': 'base64', 'size': '1374868', 'filename': 'screenshot_20211104-213931.png'}, {'application': 'octet-stream', 'content-transfer-encoding': 'base64', 'size': '2548', 'filename': 'student_info.py'}, {'boundary': '0000000000005ff63d05cffc47c3'}]
+    [
+        {'text': 'html', 'charset': 'utf-8', 'content-transfer-encoding': '7bit', 'size': '24', 'boundary': '0000000000005ff63b05cffc47c1'}, 
+        {'text': 'plain', 'charset': 'us-ascii', 'content-transfer-encoding': 'base64', 'size': '652', 'filename': 'timetable.txt'}, 
+        {'text': 'plain', 'charset': 'us-ascii', 'content-transfer-encoding': 'base64', 'size': '1218', 'filename': 'webpoints.txt'}, 
+        {'content-transfer-encoding': 'base64', 'size': '1374868', 'filename': 'screenshot_20211104-213931.png'}, {'application': 'octet-stream', 'content-transfer-encoding': 'base64', 'size': '2548', 'filename': 'student_info.py',{'boundary': '0000000000005ff63d05cffc47c3'}
+    ]
 '''
 
 r'''
