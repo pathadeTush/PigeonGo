@@ -24,11 +24,11 @@ class IMAP:
 
     email_id = os.environ.get('EMAIL_USER')
     email_pwd = os.environ.get('EMAIL_PASS')
-    # email_id = os.environ.get('EMAIL_CLG_USER')
-    # email_pwd = os.environ.get('EMAIL_CLG_PASS')
+    email_id = os.environ.get('EMAIL_CLG_USER')
+    email_pwd = os.environ.get('EMAIL_CLG_PASS')
 
     HOST = 'imap.gmail.com'
-    # HOST = 'outlook.office365.com'
+    HOST = 'outlook.office365.com'
     PORT = 993
 
     CRLF = '\r\n'
@@ -188,7 +188,7 @@ class IMAP:
         EXAMINE_CMD = f'a004 EXAMINE {mailbox}'
         code, response = self.Send_CMD(EXAMINE_CMD)
         print(f'{mailbox} mailbox selected for read only access')
-        # print(f'EXAMINE response: {response}\n')
+        print(f'EXAMINE response: {response}\n')
         if code != 'OK':
             raise Exception('__EXAMINE Error__')
         self.selected_mailbox = mailbox
@@ -241,9 +241,8 @@ class IMAP:
             elif ele == 'charset':
                 ans[ele] = split_arr[i+1]
                 i += 1
-            elif ele == 'attachment':
-                ans[ele] = True
             elif ele == 'filename':
+                ans['attachment'] = True
                 ans[ele] = split_arr[i+1]
                 i += 1
             elif ele in ['alternative', 'related', 'mixed']:
@@ -257,10 +256,11 @@ class IMAP:
         if valid:
             res[str(no)] = ans
             bodies.append(res)
-        # print(res)
+            print(res)
         return res, no, i
 
     def fetch_body_structure(self, start_index):
+        # Check start_index with max index
         cmd = f'a225 FETCH {start_index} (BODYSTRUCTURE)'
         code, response = self.Send_CMD(cmd)
         print(f'FETCH Body Structure response:\n{response}')
@@ -301,6 +301,8 @@ class IMAP:
         bodies = []
         for no, body_part in enumerate(body_parts):
             self.parse_body_structure(bodies, body_part, no+1, 0, 0)
+
+        # return
 
         # Extract Mail Text and Download Attachments
         for body in bodies:
@@ -350,7 +352,7 @@ class IMAP:
                         filePath += 'data.html'
                         file = open(filePath, 'w+')
                     else:
-                        print(f'Unknown text format: {body_part['text']}')
+                        print(f"Unknown text format: {body_part['text']}")
                         break
                     encoding = body_part['content-transfer-encoding']
                     if encoding in ['7bit', '8bit']:
@@ -496,20 +498,21 @@ imap_socket = IMAP()
 # print(folders)
 # for mailbox in mailboxes:
 #     imap_socket.Examine(mailbox)
-# imap_socket.Examine('"Sent Items"')
+imap_socket.Examine('"Sent Items"')
 # imap_socket.Examine('INBOX')
 # imap_socket.Examine('"[Gmail]/Important"')
-imap_socket.Examine('"[Gmail]/Sent Mail"')
+# imap_socket.Examine('"[Gmail]/Sent Mail"')
 # imap_socket.Status('INBOX')
 # imap_socket.Noop() 
 # imap_socket.fetch_body_part(26, 5)
 # imap_socket.fetch_mail_header(1, 2)
-# imap_socket.fetch_html_body_content(3402)
-# imap_socket.fetch_plain_body_content(1)
-imap_socket.fetch_body_structure(26)
+imap_socket.fetch_body_structure(44)
 imap_socket.close_mailbox()
 imap_socket.Logout()
 imap_socket.close_connection()
+
+# TODO Rename, Delete
+
 
 
 '''

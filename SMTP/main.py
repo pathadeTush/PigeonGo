@@ -3,11 +3,6 @@ import ssl
 import os
 import base64
 import time
-# Reference: https://www.geeksforgeeks.org/send-mail-attachment-gmail-account-using-python/
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
 
 '''
     TLS is successor to SSL
@@ -140,7 +135,6 @@ class SMTP:
     def SSL_Wrapper(self):
         context = ssl.create_default_context()
         self.__socket = context.wrap_socket(self.__socket, server_hostname=self.HOST)
-
     
     def login(self):
 
@@ -209,25 +203,37 @@ class SMTP:
         print(f'Authenticated Successfully!')
     
     def send_email(self, TO_email, Subject, Attachment = False):
+        if Attachment:
+            self.send_email_with_attachment(TO_email, Subject, Attachment)
+            return
+
+        self.email = ''
+        self.add_email_header(TO_email, Subject)
+        self.add_blank_line()
+        body = f'Sending email via imap-smtp client @{time.ctime()}'
+        self.add_email_body_text(body)
+
+        # Send Data
+        self.send_DATA(self.email)
+        self.terminate_DATA()
+
+    def add_email_header(self, TO_email, Subject):
         FROM_email = self.email_id
+        header = ''
+        header += f'From: {FROM_email}' + self.CRLF
+        header += f'To: {TO_email}' + self.CRLF
+        header += f'Subject: {Subject}' + self.CRLF
+        self.email += header
+
         self.config_MAIL_FROM(FROM_email)
         self.config_RCPT_TO(TO_email)
         self.initiate_DATA()
 
-        msg = ''
-        msg += f'From: {FROM_email}' + '\n'
-        msg += f'To: {TO_email}' + '\n'
-        msg += f'Subject: {Subject}' + '\n'
-        body = f'Sending email via imap-smtp client. {time.ctime()}'
-        msg += '\n' + body
+    def add_blank_line(self):
+        self.email += self.CRLF
 
-        # if Attachment:
-        #     self.add_attachment(msg, Attachment)
-
-        # data = msg.as_string()
-        # print(msg)
-        self.send_DATA(msg)
-        self.terminate_DATA()
+    def add_email_body_text(self, body_text):
+        self.email += body_text + self.CRLF
 
     def config_MAIL_FROM(self, email):
         self.__socket.settimeout(self.MAIL_TOUT)
@@ -291,14 +297,92 @@ class SMTP:
             raise Exception('Error occured! Mail not sent successfully! Try again!')
         print('Mail sent successfully *_*')
 
-    # Reference: https://www.geeksforgeeks.org/send-mail-attachment-gmail-account-using-python/
-    def add_attachment(self, msg, Attachment):
-        attachment = open(Attachment, 'rb')
-        p = MIMEBase('application', 'octet-stream')
-        p.set_payload((attachment).read())
-        encoders.encode_base64(p)
-        p.add_header('Content-Disposition', f'attachement; filename= {Attachment}')
-        msg.attach(p)
+    def send_email_with_attachment(self, TO_email, Subject, attachments):
+        self.email = ''
+        boundary = '===============0331756459957505656=='
+        
+        # Main Header 
+        self.add_email_header(TO_email, Subject)
+        self.add_contentType_MIMEVersion_to_header(boundary)
+
+        # Blank Line
+        self.add_blank_line()
+
+        # Body (Body Part1 + Body Part2 + Body Part3 + .....)
+
+        # Body Part
+        # Boundary
+        self.add_start_boundary(boundary)
+        # Blank Line After Header
+        self.add_blank_line()
+        # Body Part
+        body = f'Sending email via imap-smtp client. {time.ctime()}'
+        self.email += body + self.CRLF
+
+        for file_path in attachments:
+            self.add_start_boundary(boundary)
+            encoding = self.add_body_part_header(file_path)
+            self.add_body_content(file_path, encoding)
+
+        self.add_closing_boundary(boundary)
+
+        # Send data
+        self.send_DATA(self.email)
+        self.terminate_DATA()
+
+    def add_contentType_MIMEVersion_to_header(self, boundary, type = 'multipart', subtype = 'mixed'):
+        self.email += f'Content-Type: {type}/{subtype}; boundary="{boundary}"' + self.CRLF
+        self.email += 'MIME-Version: 1.0' + self.CRLF
+
+    def add_start_boundary(self, boundary):
+        self.email += self.CRLF + '--' + f'{boundary}' + self.CRLF
+    
+    def add_closing_boundary(self, boundary):
+        self.email += self.CRLF + '--' f'{boundary}' + '--' + self.CRLF
+
+    def add_body_part_header(self, file_path):
+        file = file_path.split('/')[-1].strip()
+        mime_type = self.get_MIMEType(file)
+        _ = mime_type.split('/')
+        type, subtype = _[0].strip(), _[1].strip()
+        if type == 'text':
+            encoding = '7bit'
+        else:
+            encoding = 'base64'
+        self.email += f'Content-Type: {type}/{subtype};' + self.CRLF
+        self.email += 'Content-Transfer-Encoding: ' + f'{encoding}' + self.CRLF
+        self.email += 'Content-Disposition: attachement; filename=' + f'{file}' + self.CRLF
+        return encoding
+
+    def add_body_content(self, file_path, encoding = 'base64'):
+        if encoding.lower().strip() in ['7bit', '8bit']:
+            file = open(file_path, 'r')
+            content = file.read()
+            file.close()
+            self.email += f'{content}' + self.CRLF
+            return
+        else:
+            file = open(file_path, 'rb')
+            content = file.read()
+            file.close()
+            encode_content = base64.b64encode(content).decode()
+            self.email += f'{encode_content}' + self.CRLF
+            return
+
+    def get_MIMEType(self, file):
+        extension = file.split('.')[-1].lower().strip()
+        mimefile = open('google_MIME_Types.txt', 'r')
+        data = mimefile.read()
+        mimefile.close()
+        lines = data.splitlines()
+
+        for line in lines:
+            _ = line.split('|')
+            mime_type, extensions = _[0].strip(), _[1].strip().split(',')
+            if extension in extensions:
+                return mime_type
+        
+        return 'application/octet-stream'
 
     def quit(self):
         code, response =  self.send_cmd(self.QUIT_CMD)
@@ -315,32 +399,47 @@ class SMTP:
 
 smtp_socket = SMTP()
 smtp_socket.login()
-smtp_socket.send_email('tusharpathade475@gmail.com', 'Mailing from imap-smtp client')
+# smtp_socket.send_email('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments')
+smtp_socket.send_email_with_attachment('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments', ['attachment.txt', 'img.png'])
 smtp_socket.quit()
 smtp_socket.close_connection()
-        
 
-# smpt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# smpt_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-# smpt_socket.connect((HOST, PORT))
 
-# ''' Wrap socket in SSL To make connection by initial handshake '''
-# context = ssl.create_default_context()
-# smpt_socket = context.wrap_socket(smpt_socket, server_hostname=HOST)
+'''
+    Reference:
+        Mime Types List: https://cloud.google.com/appengine/docs/standard/php/mail/mail-with-headers-attachments ,
+                         https://www.iana.org/assignments/media-types/media-types.xhtml#multipart
 
-# msg = smpt_socket.recv(1024).decode()
-# print(f'msg: {msg}')
+        Mime Types: https://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
+                    https://www.w3.org/Protocols/rfc1341/0_TableOfContents.html
 
-# # Say Hello
-# hello_msg = 'EHLO TUSHAR' + '\r\n.\r\n'
-# smpt_socket.send(hello_msg.encode('ascii'))
-# response = smpt_socket.recv(1024).decode()
-# print(f'response for hello: {response}')
 
-# # LOGIN
-# hello_msg = 'AUTH LOGIN' + '\r\n.\r\n'
-# smpt_socket.send(hello_msg.encode('ascii'))
-# response = smpt_socket.recv(1024).decode()
-# print(f'response for login: {response}')
 
-# print('Done Successfully!')
+   Reference: https://partners-intl.aliyun.com/help/doc-detail/51584.htm
+    Content type is in the form of: Content-Type: [type]/[subtype].
+    The type is in the form of:
+
+        Text: for standard representation of a text message, which may consist of various character sets or formats.
+        Image: for transfer of static image data.
+        Audio: for transfer of audio or sound data.
+        Video: for transfer of dynamic image data, which may be a video data format that includes audio.
+        Application: for transfer of application data or binary data.
+        Message: for packing an email message.
+        Multipart: for connecting multiple content parts to form a message, the parts can be different types of data.
+
+    The subtype form can be:
+
+        text/plain (plain text)
+        text/html (HTML document)
+        application/xhtml+xml (XHTML document)
+        image/gif (GIF image)
+        image/jpeg (JPEG image)
+        image/png (PNG image)
+        video/mpeg (MPEG video)
+        application/octet-stream (Any binary data)
+        message/rfc822 (RFC 822 form)
+        multipart/alternative (HTML form and plain text form of HTML mail, the same content is expressed in different forms.)
+
+    Content Transfer Encoding specifies the character encoding method used in the content area. Typical methods include 7bit, 8bit, binary, quoted-printable, and base64.
+
+'''
