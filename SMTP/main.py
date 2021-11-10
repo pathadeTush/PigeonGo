@@ -32,8 +32,11 @@ class MAIL_SERVER:
         self.is_STARTTLS = is_STARTTLS
 
 mail_servers = {}
-mail_servers['gmail'] = MAIL_SERVER('smtp.gmail.com', 587)
-mail_servers['outlook'] = MAIL_SERVER('smtp.office365.com', 587)
+mail_servers['gmail.com'] = MAIL_SERVER('smtp.gmail.com', 587)
+mail_servers['outlook.com'] = MAIL_SERVER('smtp.office365.com', 587)
+mail_servers['hotmail.com'] = MAIL_SERVER('smtp.office365.com', 587)
+mail_servers['coep.ac.in'] = MAIL_SERVER('smtp.office365.com', 587)
+
 
 
 class SMTP:

@@ -20,6 +20,7 @@ import base64
     CHECK, CLOSE, EXPUNGE, SEARCH, FETCH, STORE, COPY, and UID.
 '''
 
+
 class IMAP:
 
     email_id = os.environ.get('EMAIL_USER')
