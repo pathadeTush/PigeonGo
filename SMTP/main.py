@@ -108,7 +108,7 @@ class SMTP:
 
         # verify confirmation from server
         if code != '220':
-            raise ConnectionError(f'Fails to connect {self.HOST, self.PORT}')
+            raise Exception(f'Fails to connect {self.HOST, self.PORT}')
         else:
             print(f'connected to {self.HOST, self.PORT} successfully!')
 
@@ -400,12 +400,12 @@ class SMTP:
     
 
 
-smtp_socket = SMTP()
-smtp_socket.login()
-# smtp_socket.send_email('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments')
-smtp_socket.send_email_with_attachment('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments', ['attachment.txt', 'img.png'])
-smtp_socket.quit()
-smtp_socket.close_connection()
+# smtp_socket = SMTP()
+# smtp_socket.login()
+# # smtp_socket.send_email('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments')
+# smtp_socket.send_email_with_attachment('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments', ['attachment.txt', 'img.png'])
+# smtp_socket.quit()
+# smtp_socket.close_connection()
 
 
 '''

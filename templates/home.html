@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Home</title>
+
+   <style>
+      :root {
+         --btn-color: rgb(0, 255, 191);
+         --btn-bg-color: rgb(8, 40, 59);
+      }
+
+      * {
+         padding: 0;
+         margin: 0;
+         box-sizing: border-box;
+      }
+
+      body {
+       background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+            url({{url_for('static', filename='bg.jpg')}});
+         background-position: center;
+         background-size: cover;
+         height: 100vh;
+         color: white;
+         overflow-y: hidden;
+      }
+
+      .Heading {
+         text-align: center;
+         margin-top: 4rem;
+      }
+
+      .content {
+         margin: auto;
+         margin-top: 16rem;
+         text-align: center;
+         width: 30%;
+         font-size: large;
+      }
+
+      @media (max-width: 798px) {
+         .content {
+            width: 60%;
+         }
+      }
+
+      .button {
+         width: max-content;
+         text-align: center;
+         margin: auto;
+         margin-top: 3em;
+         border: 2px solid var(--btn-color);
+         border-radius: 5px;
+         padding: 0.8em;
+         font-size: large;
+         font-weight: 500;
+         color: var(--btn-color);
+         transition: 0.2s all ease-in;
+      }
+
+      a {
+         text-decoration: none;
+      }
+
+      .button:hover {
+         color: var(--btn-bg-color);
+         background-color: var(--btn-color);
+         transform: scale(1.05);
+      }
+   </style>
+
+</head>
+
+<body>
+
+   <h1 class="Heading">IMAP-SMTP Client</h1>
+
+   <section>
+      <p class="content">Lorem ipsum dolor sit amet consectetur adipisicing elit. Doloribus ipsam dolorum tenetur natus
+         dolore delectus tempore aliquid rerum. Maxime iure quos incidunt quisquam sequi dolores asperiores quibusdam ut
+         nisi assumenda?</p>
+
+      {% if 'loggedin' in session %}
+      <a href="{{url_for('menu')}}">
+         <div class="button">Getting Started</div>
+      </a>
+      {% else %}
+      <a href="{{url_for('login')}}">
+         <div class="button">Getting Started</div>
+      </a>
+      {% endif %}
+   </section>
+
+</body>
+
+</html>

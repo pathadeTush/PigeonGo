@@ -2,7 +2,6 @@ import socket
 import ssl
 import os
 import time
-from bs4 import BeautifulSoup
 import quopri as QP
 import base64
 
@@ -20,17 +19,28 @@ import base64
     CHECK, CLOSE, EXPUNGE, SEARCH, FETCH, STORE, COPY, and UID.
 '''
 
+class MAIL_SERVER:
+    def __init__(self, server, port):
+        self.server = server
+        self.port = port
+
+imap_servers = {}
+imap_servers['gmail.com'] = MAIL_SERVER('imap.gmail.com', 993)
+imap_servers['outlook.com'] = MAIL_SERVER('outlook.office365.com', 993)
+imap_servers['hotmail.com'] = MAIL_SERVER('outlook.office365.com', 993)
+imap_servers['coep.ac.in'] = MAIL_SERVER('outlook.office365.com', 993)
+
 
 class IMAP:
 
-    email_id = os.environ.get('EMAIL_USER')
-    email_pwd = os.environ.get('EMAIL_PASS')
-    email_id = os.environ.get('EMAIL_CLG_USER')
-    email_pwd = os.environ.get('EMAIL_CLG_PASS')
+    # email_id = os.environ.get('EMAIL_USER')
+    # email_pwd = os.environ.get('EMAIL_PASS')
+    # email_id = os.environ.get('EMAIL_CLG_USER')
+    # email_pwd = os.environ.get('EMAIL_CLG_PASS')
 
-    HOST = 'imap.gmail.com'
-    HOST = 'outlook.office365.com'
-    PORT = 993
+    # HOST = 'imap.gmail.com'
+    # HOST = 'outlook.office365.com'
+    # PORT = 993
 
     CRLF = '\r\n'
 
@@ -51,9 +61,17 @@ class IMAP:
     # Selected State cmd's
     CLOSE_CMD = 'a012 CLOSE'
 
-    def __init__(self, HOST = HOST, PORT = PORT):
-        self.HOST = HOST
-        self.PORT = PORT
+    def __init__(self, email, password):
+        domain = email.strip().split('@')[1].lower()
+        # print(email, password
+        # , domain)
+        if domain not in imap_servers:
+            raise Exception('Invalid login credientials!')
+
+        self.email_id = email
+        self.email_pwd = password
+        self.HOST = imap_servers[domain].server
+        self.PORT = imap_servers[domain].port 
 
         # TCP socket
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -95,15 +113,16 @@ class IMAP:
         # send connection request
         try:
             self.__socket.connect((self.HOST, self.PORT))
-        except Exception as e:
-            raise ConnectionError('__Check your internet connection once!')
+        except Exception:
+            raise Exception('__Check your internet connection once!')
 
         # verify confirmation from server
         connection_response = self.__socket.recv(1024).decode().rstrip('\r\t\n')
         print(f'connection response: {connection_response}')
         status = connection_response[2:4]
         if status != 'OK':
-            raise ConnectionError(f'Fails to connect {self.HOST, self.PORT}')
+            print('connect error')
+            raise Exception(f'Fails to connect {self.HOST, self.PORT}')
         else:
             print(f'connected to {self.HOST, self.PORT} successfully!')
 
@@ -125,6 +144,7 @@ class IMAP:
         code, response = self.Send_CMD(cmd)
         # print(f'Login response {response}')
         if code != 'OK':
+            print('Login Failed!')
             raise Exception('__Invalid Email or Password. Try Again!__')
         print('Authenticated Successfully!')
 
@@ -394,15 +414,6 @@ class IMAP:
             )a225 OK Success
             CLOSE Response: a012 OK Returned to authenticated state. (Success)
         '''
-        '''
-            INBOX mailbox selected for read only access
-            FETCH ENVELOPE response:
-            * 1 FETCH (ENVELOPE ("Mon, 27 May 2019 10:58:27 -0700" "Finish setting up your new Google Account" (("Google Community Team" NIL "googlecommunityteam-noreply" "google.com")) (("Google Community Team" NIL "googlecommunityteam-noreply" "google.com")) (("Google Community Team" NIL "googlecommunityteam-noreply" "google.com")) ((NIL NIL "pathadetushar2" "gmail.com")) NIL NIL NIL "<41b9bff798be5ce06ae19d982183decf2176b622-20063660-110518678@google.com>"))a225 OK Success
-            CLOSE Response: a012 OK Returned to authenticated state. (Success)
-        '''
-        '''
-            * 1 FETCH (INTERNALDATE "27-May-2019 17:58:43 +0000")a225 OK Success
-        '''
 
     def fetch_body_part(self, start_index, body_part_no):
         print(body_part_no)
@@ -493,24 +504,24 @@ class IMAP:
         print('\nDisconnected...')
         self.__socket.close()
 
-imap_socket = IMAP()
-# mailboxes, folders = imap_socket.Get_All_MailBoxes()
-# print(mailboxes)
-# print(folders)
-# for mailbox in mailboxes:
-#     imap_socket.Examine(mailbox)
-imap_socket.Examine('"Sent Items"')
-# imap_socket.Examine('INBOX')
-# imap_socket.Examine('"[Gmail]/Important"')
-# imap_socket.Examine('"[Gmail]/Sent Mail"')
-# imap_socket.Status('INBOX')
-# imap_socket.Noop() 
-# imap_socket.fetch_body_part(26, 5)
-# imap_socket.fetch_mail_header(1, 2)
-imap_socket.fetch_body_structure(44)
-imap_socket.close_mailbox()
-imap_socket.Logout()
-imap_socket.close_connection()
+# imap_socket = IMAP()
+# # mailboxes, folders = imap_socket.Get_All_MailBoxes()
+# # print(mailboxes)
+# # print(folders)
+# # for mailbox in mailboxes:
+# #     imap_socket.Examine(mailbox)
+# imap_socket.Examine('"Sent Items"')
+# # imap_socket.Examine('INBOX')
+# # imap_socket.Examine('"[Gmail]/Important"')
+# # imap_socket.Examine('"[Gmail]/Sent Mail"')
+# # imap_socket.Status('INBOX')
+# # imap_socket.Noop() 
+# # imap_socket.fetch_body_part(26, 5)
+# # imap_socket.fetch_mail_header(1, 2)
+# imap_socket.fetch_body_structure(44)
+# imap_socket.close_mailbox()
+# imap_socket.Logout()
+# imap_socket.close_connection()
 
 # TODO Rename, Delete
 

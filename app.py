@@ -3,17 +3,6 @@ from forms import LoginForm
 from IMAP.main import IMAP
 from SMTP.main import SMTP
 
-class MAIL_SERVER:
-    def __init__(self, server, port):
-        self.server = server
-        self.port = port
-
-imap_mail_servers = {}
-imap_mail_servers['gmail.com'] = MAIL_SERVER('imap.gmail.com', 993)
-imap_mail_servers['outlook.com'] = MAIL_SERVER('outlook.office365.com', 993)
-imap_mail_servers['hotmail.com'] = MAIL_SERVER('outlook.office365.com', 993)
-imap_mail_servers['coep.ac.in'] = MAIL_SERVER('outlook.office365.com', 993)
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '0d44fd179c0a3d8bc9d053f710f9ac529ede4758'
 
@@ -21,34 +10,51 @@ app.config['SECRET_KEY'] = '0d44fd179c0a3d8bc9d053f710f9ac529ede4758'
 @app.route('/home')
 def home():
    return render_template('home.html', title='Home')
+
+imap_client = None
    
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-   if 'loggedin' in session and session[loggedin]:
+   if 'loggedin' in session and session['loggedin']:
       flash('Already logged in', 'warning')
-      return redirect('home')
+      return redirect('menu')
    form = LoginForm()
    if request.method == 'POST' and form.validate_on_submit():
       email = form.email.data
       password = form.password.data
       session['email'] = email
       session['password'] = password
-      domain = email.strip().split('@')[1].lower()
-      if domain not in imap_mail_servers:
-         flash('Invalid email address. Gmail and outlook services supported only', 'danger')
+      try:
+         global imap_client
+         imap_client = IMAP(email, password)
+      except Exception:
+         flash('Invalid email id or password! Try again', 'danger')
          return redirect('login')
-      imap_client = IMAP(imap_mail_servers[domain].server, imap_mail_servers[domain].port)
       session['loggedin'] = True
-      session['imap_client'] = imap_client
-      return redirect('home')
+      flash('Logged in successfully!', 'success')
+      return redirect('menu')
    return render_template('login.html', title='login', form=form)
+
+@app.route('/menu')
+def menu():
+   if 'loggedin' not in session:
+      flash('Not logged in', 'warning')
+      return redirect('login')
+   print(imap_client)
+   return render_template('menu.html', title='menu')
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
-   if 'loggedin' in session and session[loggedin]:
-      flash('Already logged in', 'warning')
-      return redirect('home')
+   if 'loggedin' not in session:
+      flash('Not logged in', 'warning')
+      return redirect('login')
+   try:
+      imap_client.Logout()
+   except Exception:
+      flash('Logout failed!', 'warning')
+      return redirect('menu')
    session.clear()
+   flash('logout successfully!', 'success')
    return redirect('login')
 
 if __name__ == '__main__':

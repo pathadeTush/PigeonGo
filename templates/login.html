@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center mt-5">
+   <div class="row">
+      <div class="col-md-8 offset-md-2 col-xl-8 offset-xl-2">
+         <div class="card shadow">
+            <img src="{{url_for('static', filename='images1.jpeg')}}" alt="" class="card-img-top" />
+            <div class="card-body">
+               <h5 class="card-title text-center">Login</h5>
+               <form class="row g-3" action="" method="POST">
+                  {{ form.hidden_tag() }}
+                  <div>
+                     {{ form.email.label(class="form-label") }}
+                     {% if form.email.errors %}
+                     {{ form.email(class="form-control is-invalid") }}
+                     <div class="alert alert-danger" role="alert">
+                        {% for error in form.email.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                     </div>
+                     {% else %}
+                     {{ form.email(class="form-control") }}
+                     {% endif %}
+                  </div>
+                  <div>
+                     {{ form.password.label(class="form-label") }}
+                     {% if form.password.errors %}
+                     {{ form.password(class="form-control is-invalid") }}
+                     <div class="alert alert-danger" role="alert">
+                        {% for error in form.password.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                     </div>
+                     {% else %}
+                     {{ form.password(class="form-control") }}
+                     {% endif %}
+                  </div>
+                  <div class="col-12 mb-2">
+                     {{ form.submit(class="btn btn-outline-primary") }}
+                  </div>
+               </form>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+{% endblock content %}
