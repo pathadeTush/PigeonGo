@@ -159,18 +159,12 @@ class IMAP:
         lines = response.splitlines()
         lines.pop(-1) # OK line
 
-        self.MailBoxes = []
+        self.mailboxes = []
         folders = []
 
         for line in lines:
-            MailBox = line.split('"/"')[1][1:]
-            folder = MailBox.rstrip('"')
-            folder = folder.split('/')[-1]
-            folders.append(folder)
-            self.MailBoxes.append(MailBox)
-            # print(MailBox)
-        
-        return self.MailBoxes, folders
+            mailbox = line.split('"/"')[1][1:]
+            self.mailboxes.append(mailbox)
 
         '''
             ['INBOX', 'All Mail', 'Drafts', 'Important', 'Sent Mail', 'Spam', 'Starred', 'Trash']
