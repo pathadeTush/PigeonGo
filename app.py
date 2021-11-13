@@ -24,7 +24,8 @@ def verify_login():
       flash('Not logged in', 'alert-danger')
       return redirect('login')
    if not user.is_active():
-         user.load_user()
+      print('logging in again')
+      user.load_user()
 
       
 app = Flask(__name__)
@@ -63,18 +64,50 @@ def menu():
    verify_login()
    return render_template('menu.html', title='menu')
 
-@app.route('/read_mail')
-def read_mail():
+@app.route('/read_mails')
+def read_mails():
    verify_login()
    user.imap_client.Get_All_MailBoxes()
-   mailboxes = user.imap_client.mailboxes
+   mailboxes = []
 
-   return render_template('read_mail.html', title='Read Mail', mailboxes=mailboxes)
+   for mailbox in user.imap_client.mailboxes:
+      mailbox = mailbox.replace('[', '<').replace(']', '>').replace(' ', '-').replace('/', '$')
+      mailboxes.append(mailbox)
 
-@app.round('/open_mailbox/<mailbox>')
+   return render_template('mailbox.html', title='Read Mail', mailboxes=mailboxes)
+
+@app.route('/open_mailbox/<mailbox>')
 def open_mailbox(mailbox):
+   was_authenticated = user.is_active()
    verify_login()
-   
+   mailbox = mailbox.replace('<', '[').replace('>', ']').replace('-', ' ').replace('$', '/')
+   if not was_authenticated:
+      user.imap_client.Get_All_MailBoxes()
+   user.imap_client.Select(mailbox)
+   total_mails = user.imap_client.total_mails
+   mails_per_page = 10
+   if(total_mails < mails_per_page):
+      mails_per_page = total_mails
+   headers = user.imap_client.fetch_mail_header(1, mails_per_page)
+   return render_template('headers.html', title = f'{mailbox}', headers = headers)
+
+@app.route('/<mailbox>/<index>')
+def mail(mailbox, index):
+   was_authenticated = user.is_active()
+   verify_login()
+   if not was_authenticated:
+      user.imap_client.Get_All_MailBoxes()
+   mailbox = mailbox.replace('<', '[').replace('>', ']').replace('-', ' ').replace('$', '/')
+   user.imap_client.Select(mailbox)
+   index = int(index)
+   header = user.imap_client.fetch_mail_header(index, index+1)[index-1]
+   bodies = user.imap_client.fetch_body_structure(index)
+   data = user.imap_client.extract_text_html(index, bodies)
+   if data['html']:
+      file = open('static/html.html', 'w+')
+      file.write(data['html'])
+      file.close()
+   return render_template('mail.html', mailbox=mailbox, header=header, data=data)
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():

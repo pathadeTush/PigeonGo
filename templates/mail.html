@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="text-center mt-3 mb-2">
+   <a href="#" class="btn btn-warning">{{mailbox}}</a>
+</div>
+<div class="text-center mt-3 mb-2">
+   <a class="btn btn-outline-light" href="{{url_for('open_mailbox', mailbox=mailbox)}}">BACK</a>
+</div>
+<section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-8"
+  style="margin-top: 10vh;">
+   <div class="card text-dark bg-light mb-3 mt-3">
+      <div class="card-header d-flex justify-content-between"><div><b>From:</b> {{header['From']}}</div> <div>{{header['index']}}</div> </div>
+      <div class="card-body">
+         <h5 class="card-title"><b>Subject:</b> {{header['Subject']}}</h5>
+         <p class="card-text" style="white-space: pre-line"><b>Body:</b> <br>{{data['plain']}}</p>
+      </div>
+      {% if data['html'] %}
+      <div class="text-center mt-3 mb-2">
+         <a class="btn btn-outline-primary" href="{{url_for('static', filename='html.html')}}" target="_blank">View HTML</a>
+      </div>
+      {% endif %}
+   </div>
+</section>
+{% endblock content %}

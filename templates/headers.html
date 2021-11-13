@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="text-center mt-3 mb-2">
+   <a class="btn btn-outline-light" href="{{url_for('read_mails')}}">BACK</a>
+</div>
+<section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-10"
+  style="margin-top: 3vh;">
+   <table class="table table-striped table-hover text-center">
+      <thead>
+         <tr>
+            <th>{{title}}</th>
+         </tr>
+      </thead>
+      <tbody>
+         {% for header in headers %}
+         <tr>
+            <td>
+               <a href="{{url_for('mail', mailbox=title, index=header['index'])}}">
+                  <div class="card">
+                     <div class="card-body">
+                        <div class="card-title d-flex justify-content-between">
+                           <div><b>From:</b> {{header['From']}}</div>
+                           <div><b>{{header['index']}}</b></div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                           <div><b>Subject:</b> {{header['Subject']}}</div>
+                           <div class="text-muted"><b>Date:</b> {{header['Date']}}</div>
+                        </div>
+                     </div>
+                  </div>
+               </a>
+            </td>
+         </tr>
+         {% endfor %}
+      </tbody>
+   </table>
+</section>
+{% endblock content %}
