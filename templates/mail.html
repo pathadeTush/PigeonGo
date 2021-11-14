@@ -19,11 +19,11 @@
          </div>
       </div>
       <div class="card-body">
-         <h6 class="card-title"><b>Subject:</b> {{header['Subject']}}</h6>
+         <h6 class="card-title"><b>Subject:</b> {% if header['Subject'] %} {{header['Subject']}} {% else %} (no subject) {% endif %}</h6>
          <p class="card-text" style="white-space: pre-line"><b>Body:</b> <br>{% if data['plain'] %}
             {{data['plain']}}
             {% else %}
-            (No Body)
+            (No Plain Text Body)
             {% endif %}
          </p>
       </div>

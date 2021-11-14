@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<section class="container card col-xl-5 mt-5 mb-5">
+   <h3 class="text-center mt-2">{{title}}</h3>
+   <hr>
+   <form class="row g-3" action="" method="POST" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      <div class="col-md-12">
+         {{ form.TO_email.label(class="form-label") }}
+         {% if form.TO_email.errors %}
+         {{ form.TO_email(class="form-control is-invalid") }}
+         <div class="alert alert-danger" role="alert">
+            {% for error in form.TO_email.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+         </div>
+         {% else %}
+         {{ form.TO_email(class="form-control") }}
+         {% endif %}
+      </div>
+      <div class="col-md-12">
+         {{ form.Subject.label(class="form-label") }}
+         {% if form.Subject.errors %}
+         {{ form.Subject(class="form-control is-invalid") }}
+         <div class="alert alert-danger" role="alert">
+            {% for error in form.Subject.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+         </div>
+         {% else %}
+         {{ form.Subject(class="form-control") }}
+         {% endif %}
+      </div>
+      <div class="col-md-12">
+         {{ form.Body.label(class="form-label") }}
+         {% if form.Body.errors %}
+         {{ form.Body(class="form-control is-invalid") }}
+         <div class="alert alert-danger" role="alert">
+            {% for error in form.Body.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+         </div>
+         {% else %}
+         {{ form.Body(class="form-control") }}
+         {% endif %}
+      </div>
+      <div class="col-md-12">
+         {{ form.attachment.label(class="form-label") }}
+         {% if form.attachment.errors %}
+         {{ form.attachment(class="form-control is-invalid") }}
+         <div class="alert alert-danger" role="alert">
+            {% for error in form.attachment.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+         </div>
+         {% else %}
+         {{ form.attachment(class="form-control") }}
+         {% endif %}
+      </div>
+      <div class="col-12 mb-2">
+         {{ form.submit(class="btn btn-outline-primary") }}
+      </div>
+   </form>
+</section>
+{% endblock content %}

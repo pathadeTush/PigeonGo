@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash
-from forms import LoginForm, LoadMoreMailForm, DownloadAttachmentForm
+from forms import LoginForm, LoadMoreMailForm, DownloadAttachmentForm, WriteMailForm
 from IMAP.main import IMAP
 from SMTP.main import SMTP
 
@@ -7,28 +7,33 @@ class User():
    def __init__(self, imap_client=None, smtp_client=None):
       self.imap_client = imap_client
       self.smtp_client = smtp_client
-   def load_user(self):
+   def load_user(self, client='imap'):
       if 'email' not in session or 'password' not in session:
          raise Exception('Login Credientials not found in session')
       email = session['email']
       password = session['password']
       try:
-         self.imap_client = IMAP(email, password)
+         if client == 'imap':
+            self.imap_client = IMAP(email, password)
+         else:
+            self.smtp_client = SMTP(email, password)
       except Exception as e:
-         flash(f'{e.message}')
-   def is_active(self):
-      return not(self.imap_client == None)
+         flash(f'Error occured')
+   def is_active(self, client='imap'):
+      if client == 'imap':
+         return not(self.imap_client == None)
+      else:
+         return not(self.smtp_client == None)
 
 user = User()
 
-
-def verify_login():
+def verify_login(client = 'imap'):
    if 'loggedin' not in session:
       flash('Not logged in', 'alert-danger')
       return redirect('login')
-   if not user.is_active():
-      print('logging in again')
-      user.load_user()
+   if not user.is_active(client):
+      print(f'logging in again for {client} client')
+      user.load_user(client)
 
       
 app = Flask(__name__)
@@ -137,13 +142,50 @@ def mail(mailbox, index):
       return redirect(url_for('mail', mailbox=prev_mailbox, index=index))
    return render_template('mail.html', mailbox=prev_mailbox, header=header, data=data, form=form)
 
-@app.route('/logout', methods=['GET', 'POST'])
+@app.route('/write_mail', methods=['GET', 'POST'])
+def write_mail():
+   verify_login()
+   verify_login(client='smtp')
+   form = WriteMailForm()
+   if request.method == 'POST' and form.validate_on_submit():
+      TO_email = form.TO_email.data
+      Subject = form.Subject.data
+      Body = form.Body.data
+      attachments = form.attachment.data
+      print(f'attachments: {attachments}')
+      Attachments = []
+      for attachment in attachments.split(','):
+         if(len(attachment.strip()) == 0):
+            continue 
+         Attachments.append(attachment.strip())
+      print(Attachments) 
+      try:
+         user.smtp_client.send_email(TO_email, Subject, Body, Attachment = Attachments)
+      except Exception as e:
+         flash('Something went wrong! Mail not sent. Try Again!', 'alert-danger')
+         return redirect('write_mail')
+      flash('Mail sent successfully!', 'alert-success')
+      return redirect('mail_success')
+   return render_template('write_mail.html', title='Write Mail', form=form)
+
+
+@app.route('/mail_success')
+def mail_success():
+   verify_login()
+   verify_login(client='smtp')
+   return render_template('mail_success.html', title='Mail Sent Success')
+
+@app.route('/logout')
 def logout():
    verify_login()
+   verify_login(client='smtp')
    try:
       user.imap_client.Logout()
       user.imap_client.close_connection()
       user.imap_client = None
+      user.smtp_client.quit()
+      user.smtp_client.close_connection()
+      user.smtp_client = None
    except Exception:
       flash('Logout failed!', 'alert-warning')
       return redirect('menu')

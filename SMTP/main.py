@@ -26,28 +26,34 @@ import time
 '''
 
 class MAIL_SERVER:
-    def __init__(self, smtp_server, port, is_STARTTLS = True):
-        self.smtp_server = smtp_server
+    def __init__(self, server, port):
+        self.server = server
         self.port = port
-        self.is_STARTTLS = is_STARTTLS
 
-mail_servers = {}
-mail_servers['gmail.com'] = MAIL_SERVER('smtp.gmail.com', 587)
-mail_servers['outlook.com'] = MAIL_SERVER('smtp.office365.com', 587)
-mail_servers['hotmail.com'] = MAIL_SERVER('smtp.office365.com', 587)
-mail_servers['coep.ac.in'] = MAIL_SERVER('smtp.office365.com', 587)
+smtp_servers = {}
+smtp_servers['gmail.com'] = MAIL_SERVER('smtp.gmail.com', 587)
+smtp_servers['outlook.com'] = MAIL_SERVER('smtp.office365.com', 587)
+smtp_servers['hotmail.com'] = MAIL_SERVER('smtp.office365.com', 587)
+smtp_servers['coep.ac.in'] = MAIL_SERVER('smtp.office365.com', 587)
 
 
 
 class SMTP:
 
     # Timeouts as per RFC 5321  section 4.5.3.2 https://datatracker.ietf.org/doc/html/rfc5321#section-4.5.3.2
-    CONN_TOUT = 300 # 5 min
-    MAIL_TOUT = 300 # 5 min
-    RCPT_TOUT = 300 # 5 min
-    DATA_INITIATION_TOUT = 120 # 2 min
-    DATA_BLOCK_TOUT = 180 # 3 min
-    DATA_TERMINATION_TOUT = 600 # 10 min
+    # CONN_TOUT = 300 # 5 min
+    # MAIL_TOUT = 300 # 5 min
+    # RCPT_TOUT = 300 # 5 min
+    # DATA_INITIATION_TOUT = 120 # 2 min
+    # DATA_BLOCK_TOUT = 180 # 3 min
+    # DATA_TERMINATION_TOUT = 600 # 10 min
+
+    CONN_TOUT = None # 5 min
+    MAIL_TOUT = None # 5 min
+    RCPT_TOUT = None # 5 min
+    DATA_INITIATION_TOUT = None # 2 min
+    DATA_BLOCK_TOUT = None # 3 min
+    DATA_TERMINATION_TOUT = None # 10 min
 
 
     # Commands as per RFC 5321 https://datatracker.ietf.org/doc/html/rfc5321
@@ -61,10 +67,10 @@ class SMTP:
     END_MSG_CMD = CRLF + '.' + CRLF
     QUIT_CMD = 'QUIT'
 
-    email_id = os.environ.get('EMAIL_USER')
-    email_pwd = os.environ.get('EMAIL_PASS')
+    # email_id = os.environ.get('EMAIL_USER')
+    # email_pwd = os.environ.get('EMAIL_PASS')
 
-    def __init__(self, service_provider = 'gmail'):
+    def __init__(self, email, password):
 
         '''
             The following dialog illustrates how a client and server can start a TLS session:
@@ -79,9 +85,14 @@ class SMTP:
             S: 220 Go ahead
             C: <starts TLS negotiation>
         '''
-        self.service_provider = service_provider
-        self.HOST = mail_servers[service_provider].smtp_server
-        self.PORT = mail_servers[service_provider].port
+        domain = email.strip().split('@')[1].lower()
+        if domain not in smtp_servers:
+            raise Exception('Invalid login credientials!')
+
+        self.email_id = email
+        self.email_pwd = password
+        self.HOST = smtp_servers[domain].server
+        self.PORT = smtp_servers[domain].port
 
         # TCP socket
         self.__socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -92,6 +103,7 @@ class SMTP:
         self.start_TLS()
         self.SSL_Wrapper()
         self.say_hello() # One more time hello require for outlook
+        self.login()
 
     def connect(self):
         # send connection request
@@ -102,15 +114,14 @@ class SMTP:
             raise Exception('Check your internet connection once!')
         self.__socket.settimeout(None)
 
-        connection_response = self.__socket.recv(1024).decode().rstrip('\r\t\n')
-        print(f'connection response: {connection_response}')
+        connection_response = self.__socket.recv(1024).decode(errors='ignore').rstrip('\r\t\n')
+        # print(f'connection response: {connection_response}')
         code = connection_response[:3]
 
         # verify confirmation from server
         if code != '220':
             raise Exception(f'Fails to connect {self.HOST, self.PORT}')
-        else:
-            print(f'connected to {self.HOST, self.PORT} successfully!')
+        # print(f'connected to {self.HOST, self.PORT} successfully!')
 
     def say_hello(self):
         cmd = self.HELLO_CMD
@@ -121,7 +132,7 @@ class SMTP:
 
     def start_TLS(self):
         code, response = self.send_cmd(self.STARTTLS_CMD)
-        print(f'STARTTLS response: {response}')
+        # print(f'STARTTLS response: {response}')
         if code == '501':
             print('Syntax error (no parameteres allowed)')
         elif code == '454':
@@ -130,7 +141,7 @@ class SMTP:
     def send_cmd(self, cmd):
         cmd = cmd + self.CRLF
         self.__socket.send(cmd.encode('ascii'))
-        response = self.__socket.recv(1024).decode().rstrip('\r\t\n')
+        response = self.__socket.recv(1024).decode(errors='ignore').rstrip('\r\t\n')
         return response[:3], response
 
      # SSL Wrapper required for security to communicate with smtp server of google
@@ -142,18 +153,6 @@ class SMTP:
     def login(self):
 
         '''
-            AUTH cmd
-            A server challenge, otherwise known as a ready response, is a 334 reply with the text part containing a BASE64 encoded string. The client answer consists of a line containing a BASE64 encoded string. If the client wishes to cancel an authentication exchange, it issues a line with a single "*". If the server receives such an answer, it MUST reject the AUTH command by sending a 501 reply.
-
-            334 : ready
-            501 : rejected
-            235 : On successfully completion of Authentication of client
-            432 : A password transition is needed
-            534 : Authentication mechanism is too weak
-            538 : Encryption required for requested authentication mechanism
-            454 : Temporary authentication failure
-            530 : Authentication required
-
         Examples:
             S: 220 smtp.example.com ESMTP server ready
             C: EHLO jgm.example.com
@@ -178,7 +177,8 @@ class SMTP:
 
         code, response = self.send_cmd(self.AUTH_CMD)
         if code == '334':
-            print('Server is ready for authentication')
+            pass
+            # print('Server is ready for authentication')
         else:
             raise Exception('Server isn\'t ready for authentication')
         # print(f'code: {code}\nAUTH response: {response}')
@@ -187,14 +187,14 @@ class SMTP:
             email_id = self.email_id
             base64_email_id = base64.b64encode(email_id.encode('ascii')).decode() 
             code, response = self.send_cmd(base64_email_id)
-            print(f'email response: {response}')
+            # print(f'email response: {response}')
             if code != '334':
                 raise Exception()
 
             email_pwd = self.email_pwd
             base64_email_pwd = base64.b64encode(email_pwd.encode('ascii')).decode() 
             code, response = self.send_cmd(base64_email_pwd)
-            print(f'password response: {response}')
+            # print(f'password response: {response}')
 
             code = response[:3]
 
@@ -205,15 +205,16 @@ class SMTP:
         
         print(f'Authenticated Successfully!')
     
-    def send_email(self, TO_email, Subject, Attachment = False):
+    def send_email(self, TO_email, Subject, Body, Attachment = False):
         if Attachment:
-            self.send_email_with_attachment(TO_email, Subject, Attachment)
+            print("=====Sending Mail With Attachments======")
+            self.send_email_with_attachment(TO_email, Subject, Body, Attachment)
             return
 
         self.email = ''
         self.add_email_header(TO_email, Subject)
         self.add_blank_line()
-        body = f'Sending email via imap-smtp client @{time.ctime()}'
+        body = Body
         self.add_email_body_text(body)
 
         # Send Data
@@ -247,7 +248,7 @@ class SMTP:
             raise Exception('__MAIL Timeout Crossed!__')
         self.__socket.settimeout(None)
 
-        print(f'MAIL FROM response: {response}')
+        # print(f'MAIL FROM response: {response}')
         if code != '250':
             raise Exception('Invalid sender email')
     
@@ -259,7 +260,7 @@ class SMTP:
         except socket.timeout():
             raise Exception('__RCPT Timeout crossed!__')
         self.__socket.settimeout(None)
-        print(f'RCPT TO response: {response}')
+        # print(f'RCPT TO response: {response}')
 
         if code == '551':
             email = response.split('>')[0].split('<')[1]
@@ -298,9 +299,9 @@ class SMTP:
 
         if code != '250':
             raise Exception('Error occured! Mail not sent successfully! Try again!')
-        print('Mail sent successfully *_*')
+        print('Mail sent successfully ^_^')
 
-    def send_email_with_attachment(self, TO_email, Subject, attachments):
+    def send_email_with_attachment(self, TO_email, Subject, Body, attachments):
         self.email = ''
         boundary = '===============0331756459957505656=='
         
@@ -319,7 +320,7 @@ class SMTP:
         # Blank Line After Header
         self.add_blank_line()
         # Body Part
-        body = f'Sending email via imap-smtp client. {time.ctime()}'
+        body = Body
         self.email += body + self.CRLF
 
         for file_path in attachments:
@@ -344,8 +345,10 @@ class SMTP:
         self.email += self.CRLF + '--' f'{boundary}' + '--' + self.CRLF
 
     def add_body_part_header(self, file_path):
+        # print(file_path)
         file = file_path.split('/')[-1].strip()
         mime_type = self.get_MIMEType(file)
+        # print(mime_type)
         _ = mime_type.split('/')
         type, subtype = _[0].strip(), _[1].strip()
         if type == 'text':
@@ -359,32 +362,44 @@ class SMTP:
 
     def add_body_content(self, file_path, encoding = 'base64'):
         if encoding.lower().strip() in ['7bit', '8bit']:
-            file = open(file_path, 'r')
+            try:
+                file = open(file_path, 'r')
+            except Exception:
+                print(f'Invalid filepath: {file_path}')
+                raise Exception(f'Invalid filepath: {file_path}')
             content = file.read()
             file.close()
             self.email += f'{content}' + self.CRLF
             return
         else:
-            file = open(file_path, 'rb')
+            try:
+                file = open(file_path, 'rb')
+            except Exception:
+                raise Exception(f'Invalid filepath: {file_path}')
             content = file.read()
             file.close()
-            encode_content = base64.b64encode(content).decode()
+            encode_content = base64.b64encode(content).decode(errors='ignore')
             self.email += f'{encode_content}' + self.CRLF
             return
 
     def get_MIMEType(self, file):
         extension = file.split('.')[-1].lower().strip()
-        mimefile = open('google_MIME_Types.txt', 'r')
+        # print(f'file = {file} extension: {extension}')
+        mimefile_path = os.path.abspath('.') + '/SMTP/google_MIME_Types.txt'
+        mimefile = open(mimefile_path, 'r')
+        # print('mime file opened')
         data = mimefile.read()
         mimefile.close()
+        # print('mime file read')
         lines = data.splitlines()
 
         for line in lines:
             _ = line.split('|')
             mime_type, extensions = _[0].strip(), _[1].strip().split(',')
             if extension in extensions:
+                print(mime_type)
                 return mime_type
-        
+        # print('mime_type not found')
         return 'application/octet-stream'
 
     def quit(self):
@@ -399,13 +414,12 @@ class SMTP:
         print('\nDisconnected...')
     
 
-
-# smtp_socket = SMTP()
-# smtp_socket.login()
-# # smtp_socket.send_email('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments')
-# smtp_socket.send_email_with_attachment('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments', ['attachment.txt', 'img.png'])
-# smtp_socket.quit()
-# smtp_socket.close_connection()
+if __name__ == '__main__':
+    smtp_socket = SMTP(os.environ.get('EMAIL_USER'), os.environ.get('EMAIL_PASS'))
+    smtp_socket.send_email('tusharpathade475@gmail.com', 'Mail from imap-smtp client', 'This is Body of mail!')
+    # smtp_socket.send_email_with_attachment('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments', ['attachment.txt', 'img.png'])
+    smtp_socket.quit()
+    smtp_socket.close_connection()
 
 
 '''

@@ -91,7 +91,7 @@ class IMAP:
         status_code = ["OK", "NO", "BAD"]
         complete_response = ''
         while True:
-            response = self.__socket.recv(1024).decode('ascii').rstrip('\r\t\n')
+            response = self.__socket.recv(1024).decode('ascii', errors='ignore').rstrip('\r\t\n')
             complete_response += response
             try:
                 code = response.split('\n')[-1].split(' ')[1]
@@ -167,10 +167,11 @@ class IMAP:
 
         for line in lines:
             mailbox = line.split('"/"')[1][1:]
-            if len(mailbox.split('/')) <= 1 and mailbox != '"INBOX"':
+            if len(mailbox.split('/')) <= 1 and mailbox == '"[Gmail]"':
                 continue
             self.mailboxes.append(mailbox)
             self.headers[mailbox] = []
+
 
         '''
             ['INBOX', 'All Mail', 'Drafts', 'Important', 'Sent Mail', 'Spam', 'Starred', 'Trash']
@@ -198,7 +199,7 @@ class IMAP:
     def Select(self, mailbox):
         if self.selected_mailbox == mailbox:
             return
-        self.total_mails = 0
+        # self.total_mails = 0
         SELECT_CMD = f'a003 SELECT {mailbox}'
         code, response = self.Send_CMD(SELECT_CMD)
         # print(mailbox)
@@ -396,10 +397,10 @@ class IMAP:
                     if encoding in ['7bit', '8bit']:
                         data[body_part['text']] += content.strip()
                     elif encoding == 'base64':
-                        decoded_content = base64.b64decode(content).decode('utf-8')
+                        decoded_content = base64.b64decode(content).decode(errors='ignore')
                         data[body_part['text']] += decoded_content.strip()
                     elif encoding == 'quoted-printable':
-                        decoded_content = QP.decodestring(content).decode('utf-8')
+                        decoded_content = QP.decodestring(content).decode(errors='ignore')
                         data[body_part['text']] += decoded_content.strip()
                     else:
                         print(f'Unknown encoding: {encoding}')
@@ -431,7 +432,7 @@ class IMAP:
             print(f'{mailbox_dir} already available')
         except Exception:
             raise Exception(f'{mailbox_dir} can not be created!')
-        # Extract Mail Text and Download Attachments
+        # Download Attachments
         for body in bodies:
             for key in body:
                 try:
@@ -458,14 +459,14 @@ class IMAP:
                         if binary:
                             file.write(decoded_content)
                         else:
-                            file.write(decoded_content.decode('utf-8'))
+                            file.write(decoded_content.decode('utf-8', errors='ignore'))
                         file.close()
                     elif encoding == 'quoted-printable':
                         decoded_content = QP.decodestring(content)
                         if binary:
                             file.write(decoded_content)
                         else:
-                            file.write(decoded_content.decode('utf-8'))
+                            file.write(decoded_content.decode('utf-8', errors='ignore'))
                         file.close()
                     else:
                         print(f'Unknown encoding: {encoding}')
@@ -507,8 +508,6 @@ class IMAP:
             code, response = self.Send_CMD(cmd)
             if code != 'OK':
                 raise Exception('__FETCH Error__')
-            if response[-10:-8] == 'OK':
-                response = response[: -10] + '\n)\n'
             headers = self.parse_header(response, [], start_index)
             return headers[0]
 
@@ -537,11 +536,10 @@ class IMAP:
         if code != 'OK':
             raise Exception('__FETCH Error__')
         # print(f'FETCH response:\n {response}\n')
-        
-        if response[-10:-8] == 'OK':
-            response = response[: -10] + '\n)\n'
 
         new_headers = self.parse_header(response, [], index=start_index)
+        if(count > len(new_headers)):
+            count = len(new_headers)
         for i in range(count):
             prev_headers.append(new_headers[i])
         self.headers[self.selected_mailbox] = prev_headers
@@ -551,29 +549,56 @@ class IMAP:
     def parse_header(self, response, headers, index):
         header = {}
         lines = response.splitlines()
+        lines.pop(-1)
+        lines.append(')')
         idx = index
         for line in lines:
+            line = line.strip()
+            if(len(line) == 0):
+                continue
             if line.lower().startswith('date:'):
-                header['Date'] = line[6:].strip()
+                header['Date'] = line[6:]
             elif line.lower().startswith('from:'):
-                header['From'] = line[6:].strip()
+                header['From'] = line[6:]
             elif line.lower().startswith('to:'):
-                header['To'] = line[4:].strip()
+                header['To'] = line[4:]
             elif line.lower().startswith('bcc:'):
-                header['Bcc'] = line[5:].strip()
+                header['Bcc'] = line[5:]
             elif line.lower().startswith('subject:'):
-                header['Subject'] = line[9:].strip()
+                header['Subject'] = line[9:]
             elif line.lower().startswith('content-type:'):
-                header['Content-Type'] = line[14:].strip()
+                header['Content-Type'] = line[14:]
             elif line.lower().startswith('content-transfer-encoding:'):
-                header['Content-Transfer-Encoding'] = line[27:].strip()
+                header['Content-Transfer-Encoding'] = line[27:]
             # Each headers end with: blank line + ')' line
-            elif line == ')':
+            elif line[-1] == ')':
                 header['index'] = idx
                 headers.append(header)
                 header = {}
                 idx += 1
         return headers
+
+    def rename_mailbox(self, new_name):
+        RENAME_CMD = f'a111 RENAME {self.selected_mailbox} {new_name}'
+        code, response = self.Send_CMD(RENAME_CMD)
+        print(response)
+        if code != 'OK':
+            raise Exception('__RENAME Error__')
+        print(f'{self.selected_mailbox} renamed to {new_name}')
+        self.mailboxes = []
+        self.Get_All_MailBoxes()
+        self.Select(new_name)
+
+    def delete_mailbox(self):
+        DELETE_CMD = f'a111 DELETE {self.selected_mailbox}'
+        code, response = self.Send_CMD(DELETE_CMD)
+        print(response)
+        if code != 'OK':
+            raise Exception('__DELETE Error__')
+        print(f'{self.selected_mailbox} deleted successfully!')
+        self.mailboxes = []
+        self.Get_All_MailBoxes()
+
 
     def Logout(self):
         code, response = self.Send_CMD(self.LOGOUT_CMD)
@@ -601,16 +626,17 @@ if __name__ == '__main__':
     #     imap_socket.Examine(mailbox)
     # imap_socket.Select('"INBOX"')
     # print(imap_socket.selected_mailbox, imap_socket.total_mails)
-    # imap_socket.Examine('"Sent Items"')
+    imap_socket.Select('"[Gmail]/Starred"')
+    imap_socket.delete_mailbox()
     # imap_socket.Examine('INBOX')
     # imap_socket.Examine('"[Gmail]/Important"')
-    imap_socket.Examine('"[Gmail]/Sent Mail"')
+    # imap_socket.Examine('"[Gmail]/Sent Mail"')
     # imap_socket.Status('INBOX')
     # imap_socket.Noop() 
-    bodies = imap_socket.fetch_body_structure(26)
-    for body in bodies:
-        print(body)
-    imap_socket.download_attachment(26, bodies)
+    # bodies = imap_socket.fetch_body_structure(26)
+    # for body in bodies:
+    #     print(body)
+    # imap_socket.download_attachment(26, bodies)
     # data = imap_socket.extract_text_html(1, bodies)
     # print(f'Plain Text content....\n{data["html"]}')
     # headers = imap_socket.fetch_mail_header(1, 1, single=True)
