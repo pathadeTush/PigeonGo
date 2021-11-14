@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash
-from forms import LoginForm
+from forms import LoginForm, LoadMoreMailForm, DownloadAttachmentForm
 from IMAP.main import IMAP
 from SMTP.main import SMTP
 
@@ -12,7 +12,10 @@ class User():
          raise Exception('Login Credientials not found in session')
       email = session['email']
       password = session['password']
-      self.imap_client = IMAP(email, password)
+      try:
+         self.imap_client = IMAP(email, password)
+      except Exception as e:
+         flash(f'{e.message}')
    def is_active(self):
       return not(self.imap_client == None)
 
@@ -76,44 +79,70 @@ def read_mails():
 
    return render_template('mailbox.html', title='Read Mail', mailboxes=mailboxes)
 
-@app.route('/open_mailbox/<mailbox>')
+@app.route('/open_mailbox/<mailbox>', methods=['GET', 'POST'])
 def open_mailbox(mailbox):
    was_authenticated = user.is_active()
    verify_login()
+   prev_mailbox = mailbox
    mailbox = mailbox.replace('<', '[').replace('>', ']').replace('-', ' ').replace('$', '/')
    if not was_authenticated:
       user.imap_client.Get_All_MailBoxes()
    user.imap_client.Select(mailbox)
    total_mails = user.imap_client.total_mails
-   mails_per_page = 10
-   if(total_mails < mails_per_page):
-      mails_per_page = total_mails
-   headers = user.imap_client.fetch_mail_header(1, mails_per_page)
-   return render_template('headers.html', title = f'{mailbox}', headers = headers)
+   mail_buffer = 10
+   form = LoadMoreMailForm()
+   headers = []
+   if request.method == 'POST' and form.validate_on_submit():
+      headers = user.imap_client.fetch_mail_header(1, mail_buffer)
+      flash('fetched more mails!', 'alert-success')
+      return redirect(url_for('open_mailbox', mailbox=prev_mailbox))
+   else:
+      headers = user.imap_client.headers[mailbox]
+      if(len(headers) == 0):
+         headers = user.imap_client.fetch_mail_header(1, mail_buffer)
+   if(len(headers) >= total_mails):
+      form = ''
+   return render_template('headers.html', title = f'{prev_mailbox}', headers=headers, form=form)
 
-@app.route('/<mailbox>/<index>')
+@app.route('/<mailbox>/<index>', methods=['GET', 'POST'])
 def mail(mailbox, index):
    was_authenticated = user.is_active()
    verify_login()
    if not was_authenticated:
       user.imap_client.Get_All_MailBoxes()
+   print(f'inside mail function mailbox: {mailbox}')
+   prev_mailbox = mailbox
    mailbox = mailbox.replace('<', '[').replace('>', ']').replace('-', ' ').replace('$', '/')
    user.imap_client.Select(mailbox)
    index = int(index)
-   header = user.imap_client.fetch_mail_header(index, index+1)[index-1]
+   header = user.imap_client.fetch_mail_header(index, 1, single=True)
    bodies = user.imap_client.fetch_body_structure(index)
-   data = user.imap_client.extract_text_html(index, bodies)
-   if data['html']:
-      file = open('static/html.html', 'w+')
-      file.write(data['html'])
-      file.close()
-   return render_template('mail.html', mailbox=mailbox, header=header, data=data)
+   data = []
+   if not bodies:
+      flash(f'max index possible: {user.imap_client.total_mails}', 'alert-warning')
+   else:
+      data = user.imap_client.extract_text_html(index, bodies)
+      if data['html']:
+         file = open('static/html.html', 'w+')
+         file.write(data['html'])
+         file.close()
+   form = DownloadAttachmentForm()
+   if request.method == 'POST' and form.validate_on_submit():
+      try:
+         download_path = user.imap_client.download_attachment(index, bodies)
+      except Exception:
+         flash('Downloads failed! Try again', 'alert-danger')
+         return redirect(url_for('mail', mailbox=prev_mailbox, index=index))
+      flash(f'Attachment downloaded successfully to {download_path}!', 'alert-success')
+      return redirect(url_for('mail', mailbox=prev_mailbox, index=index))
+   return render_template('mail.html', mailbox=prev_mailbox, header=header, data=data, form=form)
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
    verify_login()
    try:
       user.imap_client.Logout()
+      user.imap_client.close_connection()
       user.imap_client = None
    except Exception:
       flash('Logout failed!', 'alert-warning')

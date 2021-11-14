@@ -4,7 +4,7 @@ import os
 import time
 import quopri as QP
 import base64
-
+from pathlib import Path
 '''
     imap.gmail.com
     Requires SSL: Yes 
@@ -91,7 +91,7 @@ class IMAP:
         status_code = ["OK", "NO", "BAD"]
         complete_response = ''
         while True:
-            response = self.__socket.recv(1024).decode('ascii', errors='ignore').rstrip('\r\t\n')
+            response = self.__socket.recv(1024).decode('ascii').rstrip('\r\t\n')
             complete_response += response
             try:
                 code = response.split('\n')[-1].split(' ')[1]
@@ -196,15 +196,16 @@ class IMAP:
 
     # Open Mailbox (Read/Write)
     def Select(self, mailbox):
-        print(f'{self.selected_mailbox} -- {mailbox}')
         if self.selected_mailbox == mailbox:
             return
+        self.total_mails = 0
         SELECT_CMD = f'a003 SELECT {mailbox}'
         code, response = self.Send_CMD(SELECT_CMD)
         # print(mailbox)
         # print(f'SELECT response: {response}\n')
         if code != 'OK':
             raise Exception('__SELECT Error__')
+        self.selected_mailbox = mailbox
         lines = response.splitlines()
         for line in lines:
             words = line.strip().split(' ')
@@ -213,17 +214,30 @@ class IMAP:
                     self.total_mails = int(words[1])
             except:
                 raise Exception('Select Error')
-        self.selected_mailbox = mailbox
+        print(f'{self.selected_mailbox} selected. total mails available: {self.total_mails}')
     
     # Read Mailbox (Read Only)
     def Examine(self, mailbox):
+        if self.selected_mailbox == mailbox:
+            return
+        self.total_mails = 0
+
         EXAMINE_CMD = f'a004 EXAMINE {mailbox}'
         code, response = self.Send_CMD(EXAMINE_CMD)
         print(f'{mailbox} mailbox selected for read only access')
-        print(f'EXAMINE response: {response}\n')
+        # print(f'EXAMINE response: {response}\n')
         if code != 'OK':
             raise Exception('__EXAMINE Error__')
         self.selected_mailbox = mailbox
+        lines = response.splitlines()
+        for line in lines:
+            words = line.strip().split(' ')
+            try:
+                if words[2] == 'EXISTS':
+                    self.total_mails = int(words[1])
+            except:
+                raise Exception('Examine Error')
+        print(f'{self.selected_mailbox} selected. total mails available: {self.total_mails}')
         
     # Check Status of Mailbox (Not used as such)
     def Status(self, mailbox):
@@ -292,6 +306,10 @@ class IMAP:
 
     def fetch_body_structure(self, start_index):
         # Check start_index with max index
+        print(f'Fetch body structure for index: {start_index} for {self.selected_mailbox} total mails: {self.total_mails}')
+        if(start_index > self.total_mails):
+            print(f'max index possible: {self.total_mails}')
+            return []
         cmd = f'a225 FETCH {start_index} (BODYSTRUCTURE)'
         code, response = self.Send_CMD(cmd)
         # print(f'FETCH Body Structure response:\n{response}')
@@ -361,6 +379,7 @@ class IMAP:
         data = {}
         data['plain'] = ''
         data['html'] = ''
+        data['attachment'] = []
         for body in bodies:
             for key in body:
                 try:
@@ -368,11 +387,11 @@ class IMAP:
                 except:
                     body_part_no = float(key)
                 body_part = body[key]
-                content = self.fetch_body_part(start_index, body_part_no)
-                if body_part['text']:
+                if body_part['text'] and not body_part['attachment']:
                     if body_part['text'] not in ['html', 'plain']:
                         print(f"Unknown text format: {body_part['text']}")
                         break
+                    content = self.fetch_body_part(start_index, body_part_no)
                     encoding = body_part['content-transfer-encoding']
                     if encoding in ['7bit', '8bit']:
                         data[body_part['text']] += content.strip()
@@ -385,10 +404,33 @@ class IMAP:
                     else:
                         print(f'Unknown encoding: {encoding}')
                         break
+                elif body_part['attachment']:
+                    data['attachment'].append(body_part['filename'])
                 break
         return data
 
     def download_attachment(self, start_index, bodies):
+        # To get path of home directory Reference: https://www.studytonight.com/python-howtos/how-to-get-the-home-directory-in-python#:~:text=Use%20os%20module%20to%20get%20the%20Home%20Directory&text=path.,will%20return%20the%20path%20unchanged.
+
+        home_dir_path = Path.home()
+        root_download_directory = 'imap-smtp-downloads'
+        root_dir_path = os.path.join(home_dir_path, root_download_directory)
+        try:
+            os.mkdir(root_dir_path)
+        except FileExistsError:
+            print(f'{root_download_directory} already available')
+        except Exception:
+            raise Exception(f'{root_download_directory} can not be created!')
+
+        mailbox = self.selected_mailbox
+        mailbox_dir = mailbox.strip('"').replace('[', '').replace(']', '').replace(' ', '-').replace('/', '-')
+        mailbox_dir_path = os.path.join(root_dir_path, mailbox_dir)
+        try:
+            os.mkdir(mailbox_dir_path)
+        except FileExistsError:
+            print(f'{mailbox_dir} already available')
+        except Exception:
+            raise Exception(f'{mailbox_dir} can not be created!')
         # Extract Mail Text and Download Attachments
         for body in bodies:
             for key in body:
@@ -397,15 +439,15 @@ class IMAP:
                 except:
                     body_part_no = float(key)
                 body_part = body[key]
-                content = self.fetch_body_part(start_index, body_part_no)
                 if body_part['attachment']:
-                    filePath = 'downloads/' + str(start_index) + '-' + body_part['filename']
+                    filePath = mailbox_dir_path + '/' + str(start_index) + '-' + body_part['filename']
                     binary = False
                     if body_part['text']:
                         file = open(filePath, 'w+')
                     else: # binary file
                         file = open(filePath, 'wb')
                         binary = True
+                    content = self.fetch_body_part(start_index, body_part_no)
                     encoding = body_part['content-transfer-encoding']
                     if encoding in ['7bit', '8bit']:
                         file.write(content)
@@ -428,33 +470,8 @@ class IMAP:
                     else:
                         print(f'Unknown encoding: {encoding}')
                         break
-                elif body_part['text']:
-                    filePath = 'downloads/'+ str(start_index) + '-'
-                    if body_part['text'] == 'plain':
-                        filePath += 'data.txt'
-                        file = open(filePath, 'w+')
-                    elif body_part['text'] == 'html':
-                        filePath += 'data.html'
-                        file = open(filePath, 'w+')
-                    else:
-                        print(f"Unknown text format: {body_part['text']}")
-                        break
-                    encoding = body_part['content-transfer-encoding']
-                    if encoding in ['7bit', '8bit']:
-                        file.write(content)
-                        file.close()
-                    elif encoding == 'base64':
-                        decoded_content = base64.b64decode(content).decode('utf-8')
-                        file.write(decoded_content)
-                        file.close()
-                    elif encoding == 'quoted-printable':
-                        decoded_content = QP.decodestring(content).decode('utf-8')
-                        file.write(decoded_content)
-                        file.close()
-                    else:
-                        print(f'Unknown encoding: {encoding}')
-                        break
                 break
+        return mailbox_dir_path
 
     def fetch_body_part(self, start_index, body_part_no):
         # print(body_part_no)
@@ -478,16 +495,44 @@ class IMAP:
         # print(response)
         return response
 
-    def fetch_mail_header(self, start_index, count):
+    def fetch_mail_header(self, start_index, count, single = False):
         # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
         # cmd = f'a225 FETCH {start_index}:{start_index + count} (BODY.PEEK[HEADER])'
-        if count < 1:
+        if(self.total_mails < 1):
             return []
-        headers = self.headers[self.selected_mailbox]
-        print(f'{self.selected_mailbox} -- {len(headers)}')
-        if(len(headers) >= count):
-            return headers
-        cmd = f'A654 FETCH {start_index}:{start_index + count} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
+
+        # If only 1 header to be fetched
+        if(single):
+            cmd = f'A654 FETCH {start_index} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
+            code, response = self.Send_CMD(cmd)
+            if code != 'OK':
+                raise Exception('__FETCH Error__')
+            if response[-10:-8] == 'OK':
+                response = response[: -10] + '\n)\n'
+            headers = self.parse_header(response, [], start_index)
+            return headers[0]
+
+        prev_headers = self.headers[self.selected_mailbox]
+        prev_header_len = len(prev_headers)
+        print(f'previously fetched headers for {self.selected_mailbox} -- {prev_header_len}')
+
+        if (prev_header_len >= self.total_mails):
+            return prev_headers
+
+        if(prev_header_len == 0):
+            start_index = 1
+            end_index = start_index + count - 1
+            if(end_index > self.total_mails):
+                end_index = self.total_mails 
+            count = end_index - start_index + 1
+        else:
+            start_index = prev_header_len + 1
+            end_index = start_index + count - 1
+            if(end_index > self.total_mails):
+                end_index = self.total_mails 
+            count = end_index - start_index + 1
+
+        cmd = f'A654 FETCH {start_index}:{end_index} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
         code, response = self.Send_CMD(cmd)
         if code != 'OK':
             raise Exception('__FETCH Error__')
@@ -496,41 +541,39 @@ class IMAP:
         if response[-10:-8] == 'OK':
             response = response[: -10] + '\n)\n'
 
-        idx = start_index
+        new_headers = self.parse_header(response, [], index=start_index)
+        for i in range(count):
+            prev_headers.append(new_headers[i])
+        self.headers[self.selected_mailbox] = prev_headers
+        print(f'total headers fetched: {count} starting from  index {start_index}')
+        return prev_headers
+
+    def parse_header(self, response, headers, index):
         header = {}
         lines = response.splitlines()
+        idx = index
         for line in lines:
-            if line.startswith('Date:') or line.startswith('DATE:'):
-                header['Date'] = line[6:]
-            elif line.startswith('From:') or line.startswith('FROM:'):
-                header['From'] = line[6:]
-            elif line.startswith('To:') or line.startswith('TO:'):
-                header['To'] = line[4:]
-            elif line.startswith('Bcc:') or line.startswith('BCC:'):
-                header['Bcc'] = line[5:]
-            elif line.startswith('Subject:') or line.startswith('SUBJECT:'):
-                header['Subject'] = line[9:]
-            elif line.startswith('Content-Type:'):
-                header['Content-Type'] = line[14:]
-            elif line.startswith('Content-Transfer-Encoding:'):
-                header['Content-Transfer-Encoding'] = line[27:]
+            if line.lower().startswith('date:'):
+                header['Date'] = line[6:].strip()
+            elif line.lower().startswith('from:'):
+                header['From'] = line[6:].strip()
+            elif line.lower().startswith('to:'):
+                header['To'] = line[4:].strip()
+            elif line.lower().startswith('bcc:'):
+                header['Bcc'] = line[5:].strip()
+            elif line.lower().startswith('subject:'):
+                header['Subject'] = line[9:].strip()
+            elif line.lower().startswith('content-type:'):
+                header['Content-Type'] = line[14:].strip()
+            elif line.lower().startswith('content-transfer-encoding:'):
+                header['Content-Transfer-Encoding'] = line[27:].strip()
+            # Each headers end with: blank line + ')' line
             elif line == ')':
                 header['index'] = idx
                 headers.append(header)
                 header = {}
                 idx += 1
-
-        self.headers[self.selected_mailbox] = headers
-        print(f'total headers fetched: {len(headers)}')
         return headers
-
-        '''
-            Content-Type: text/plain; charset="utf-8"  (for sent mail)
-
-            Content-Type: multipart/alternative; boundary="0000000000003eaeeb059ad8f802"  (for important, Inbox)
-        '''
-
-    ''' Any State Functions '''
 
     def Logout(self):
         code, response = self.Send_CMD(self.LOGOUT_CMD)
@@ -556,18 +599,22 @@ if __name__ == '__main__':
     # print(imap_socket.mailboxes)
     # for mailbox in mailboxes:
     #     imap_socket.Examine(mailbox)
-    imap_socket.Select('INBOX')
+    # imap_socket.Select('"INBOX"')
     # print(imap_socket.selected_mailbox, imap_socket.total_mails)
     # imap_socket.Examine('"Sent Items"')
     # imap_socket.Examine('INBOX')
     # imap_socket.Examine('"[Gmail]/Important"')
-    # imap_socket.Examine('"[Gmail]/Sent Mail"')
+    imap_socket.Examine('"[Gmail]/Sent Mail"')
     # imap_socket.Status('INBOX')
     # imap_socket.Noop() 
-    bodies = imap_socket.fetch_body_structure(1)
-    data = imap_socket.extract_text_html(1, bodies)
-    print(f'Plain Text content....\n{data["html"]}')
-    # imap_socket.fetch_mail_header(1, 9)
+    bodies = imap_socket.fetch_body_structure(26)
+    for body in bodies:
+        print(body)
+    imap_socket.download_attachment(26, bodies)
+    # data = imap_socket.extract_text_html(1, bodies)
+    # print(f'Plain Text content....\n{data["html"]}')
+    # headers = imap_socket.fetch_mail_header(1, 1, single=True)
+    # print(headers)
     # imap_socket.fetch_body_structure(44)
     imap_socket.close_mailbox()
     imap_socket.Logout()

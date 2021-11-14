@@ -9,16 +9,56 @@
 <section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-8"
   style="margin-top: 10vh;">
    <div class="card text-dark bg-light mb-3 mt-3">
-      <div class="card-header d-flex justify-content-between"><div><b>From:</b> {{header['From']}}</div> <div>{{header['index']}}</div> </div>
+      <div class="card-header">
+         <div class="d-flex justify-content-between">
+            <div><b>From:</b> {{header['From']}}</div>
+            <div>{{header['index']}}</div>
+         </div>
+         <div>
+            <b>Date: </b>{{header['Date']}}
+         </div>
+      </div>
       <div class="card-body">
-         <h5 class="card-title"><b>Subject:</b> {{header['Subject']}}</h5>
-         <p class="card-text" style="white-space: pre-line"><b>Body:</b> <br>{{data['plain']}}</p>
+         <h6 class="card-title"><b>Subject:</b> {{header['Subject']}}</h6>
+         <p class="card-text" style="white-space: pre-line"><b>Body:</b> <br>{% if data['plain'] %}
+            {{data['plain']}}
+            {% else %}
+            (No Body)
+            {% endif %}
+         </p>
       </div>
       {% if data['html'] %}
       <div class="text-center mt-3 mb-2">
-         <a class="btn btn-outline-primary" href="{{url_for('static', filename='html.html')}}" target="_blank">View HTML</a>
+         <a class="btn btn-outline-primary" href="{{url_for('static', filename='html.html')}}" target="_blank">View
+            HTML</a>
+      </div>
+      {% endif %}
+      {% if data['attachment'] %}
+      <p class="text-center">
+         <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample"
+           aria-expanded="false" aria-controls="collapseExample">
+            View Attachments
+         </button>
+      </p>
+      <div class="collapse" id="collapseExample">
+         <div class="card card-body">
+            <ul>
+               {% for attachment in data['attachment'] %}
+               <li>{{attachment}}</li>
+               {% endfor %}
+            </ul>
+            {% if form %}
+            <form class="row g-3 text-center" action="" method="POST">
+               {{ form.hidden_tag() }}
+               <div class="col-12 mb-2">
+                  {{ form.submit(class="btn btn-outline-danger") }}
+               </div>
+            </form>
+            {% endif %}
+         </div>
       </div>
       {% endif %}
    </div>
 </section>
+
 {% endblock content %}

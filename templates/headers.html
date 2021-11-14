@@ -3,7 +3,7 @@
 <div class="text-center mt-3 mb-2">
    <a class="btn btn-outline-light" href="{{url_for('read_mails')}}">BACK</a>
 </div>
-<section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-10"
+<section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-10 mb-4"
   style="margin-top: 3vh;">
    <table class="table table-striped table-hover text-center">
       <thead>
@@ -35,4 +35,12 @@
       </tbody>
    </table>
 </section>
+{% if form %}
+   <form class="row g-3 text-center" action="" method="POST">
+      {{ form.hidden_tag() }}
+      <div class="col-12 mb-2">
+         {{ form.submit(class="btn btn-light") }}
+      </div>
+   </form>
+{% endif %}
 {% endblock content %}
