@@ -5,6 +5,7 @@ import time
 import quopri as QP
 import base64
 from pathlib import Path
+from email.header import decode_header, make_header
 '''
     imap.gmail.com
     Requires SSL: Yes 
@@ -519,31 +520,28 @@ class IMAP:
             return prev_headers
 
         if(prev_header_len == 0):
-            start_index = 1
-            end_index = start_index + count - 1
-            if(end_index > self.total_mails):
-                end_index = self.total_mails 
-            count = end_index - start_index + 1
+            end_index = self.total_mails
         else:
-            start_index = prev_header_len + 1
-            end_index = start_index + count - 1
-            if(end_index > self.total_mails):
-                end_index = self.total_mails 
-            count = end_index - start_index + 1
+            end_index = self.total_mails - prev_header_len
+        start_index = end_index - count + 1
+        if(start_index < 0):
+            start_index = 1
+        count = end_index - start_index + 1
 
         cmd = f'A654 FETCH {start_index}:{end_index} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
         code, response = self.Send_CMD(cmd)
+        print(f'{cmd}')
         if code != 'OK':
             raise Exception('__FETCH Error__')
-        # print(f'FETCH response:\n {response}\n')
 
         new_headers = self.parse_header(response, [], index=start_index)
         if(count > len(new_headers)):
             count = len(new_headers)
+        new_headers.reverse()
         for i in range(count):
             prev_headers.append(new_headers[i])
         self.headers[self.selected_mailbox] = prev_headers
-        print(f'total headers fetched: {count} starting from  index {start_index}')
+        print(f'total headers fetched: {count} starting from  index {start_index} to {end_index}')
         return prev_headers
 
     def parse_header(self, response, headers, index):
@@ -565,7 +563,7 @@ class IMAP:
             elif line.lower().startswith('bcc:'):
                 header['Bcc'] = line[5:]
             elif line.lower().startswith('subject:'):
-                header['Subject'] = line[9:]
+                header['Subject'] = str(make_header(decode_header(line[9:])))
             elif line.lower().startswith('content-type:'):
                 header['Content-Type'] = line[14:]
             elif line.lower().startswith('content-transfer-encoding:'):
@@ -602,7 +600,7 @@ class IMAP:
 
     def Logout(self):
         code, response = self.Send_CMD(self.LOGOUT_CMD)
-        # print(f'logout response: {response}')
+        print(f'logout response: {response}')
         if code != 'OK':
             raise Exception('__LOGOUT Error__')
         print('Logout Successfully!')
