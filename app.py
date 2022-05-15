@@ -1,10 +1,11 @@
-from flask import Flask, render_template, redirect, url_for, request, session, flash
+from flask import Flask, render_template, redirect, url_for, request, session, flash, jsonify
 from forms import LoginForm, LoadMoreMailForm, DownloadAttachmentForm, WriteMailForm
 from IMAP.main import IMAP
 from SMTP.main import SMTP
 
 class User():
    def __init__(self, imap_client=None, smtp_client=None):
+      print("\n\t===== User instantiated ====")
       self.imap_client = imap_client
       self.smtp_client = smtp_client
    def load_user(self, client='imap'):
@@ -25,17 +26,15 @@ class User():
       else:
          return not(self.smtp_client == None)
 
-user = User()
 
 def verify_login(client = 'imap'):
    if 'loggedin' not in session:
       flash('Not logged in', 'alert-danger')
       return redirect('login')
    if not user.is_active(client):
-      print(f'logging in again for {client} client')
+      print(f'logging again for {client} client')
       user.load_user(client)
 
-      
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '0d44fd179c0a3d8bc9d053f710f9ac529ede4758'
 
@@ -69,13 +68,22 @@ def login():
 
 @app.route('/menu')
 def menu():
-   verify_login()
+   res = verify_login()
+   if(res):
+      return res
    return render_template('menu.html', title='menu')
 
 @app.route('/read_mails')
 def read_mails():
-   verify_login()
-   user.imap_client.Get_All_MailBoxes()
+   res = verify_login()
+   if(res):
+      return res
+   try:
+      user.imap_client.Get_All_MailBoxes()
+   except:
+      flash("error occurred! Trying again...", "alert-danger")
+      return redirect('read_mails')
+
    mailboxes = []
 
    for mailbox in user.imap_client.mailboxes:
@@ -87,41 +95,76 @@ def read_mails():
 @app.route('/open_mailbox/<mailbox>', methods=['GET', 'POST'])
 def open_mailbox(mailbox):
    was_authenticated = user.is_active()
-   verify_login()
+   res = verify_login()
+   if(res):
+      return res
    prev_mailbox = mailbox
    mailbox = mailbox.replace('<', '[').replace('>', ']').replace('-', ' ').replace('$', '/')
    if not was_authenticated:
-      user.imap_client.Get_All_MailBoxes()
-   user.imap_client.Select(mailbox)
+      try:
+         user.imap_client.Get_All_MailBoxes()
+      except:
+         flash("error occurred! Trying again...", "alert-danger")
+         return redirect('open_mailbox', mailbox=prev_mailbox)
+
+   try:
+      user.imap_client.Select(mailbox)
+   except:
+      flash("error occurred! Trying again...", "alert-danger")
+      return redirect('open_mailbox', mailbox=prev_mailbox)      
+
    total_mails = user.imap_client.total_mails
    mail_buffer = 10
-   form = LoadMoreMailForm()
    headers = []
-   if request.method == 'POST' and form.validate_on_submit():
-      headers = user.imap_client.fetch_mail_header(1, mail_buffer)
-      flash('fetched more mails!', 'alert-success')
-      return redirect(url_for('open_mailbox', mailbox=prev_mailbox))
-   else:
-      headers = user.imap_client.headers[mailbox]
-      if(len(headers) == 0):
+   if request.method == 'POST':
+      try:
          headers = user.imap_client.fetch_mail_header(1, mail_buffer)
+      except:
+         flash("error occurred! Trying again...", "alert-danger")
+         return redirect('open_mailbox', mailbox=prev_mailbox) 
+
+      # flash('fetched more mails!', 'alert-success')
+      return jsonify({"headers": headers})
+   else:
+      prev_header_len = len(user.imap_client.headers[mailbox])
+      try:
+         headers = user.imap_client.fetch_mail_header(1, mail_buffer, "GET")
+      except:
+         flash("error occurred! Trying again...", "alert-danger")
+         return redirect('open_mailbox', mailbox=prev_mailbox) 
+      if(prev_header_len != len(headers)):
+         flash(f'Got {len(headers) - prev_header_len} new mails', 'alert-warning')
+   allFetched = False
    if(len(headers) >= total_mails):
-      form = ''
-   return render_template('headers.html', title = f'{prev_mailbox}', headers=headers, form=form)
+      allFetched = True
+   return render_template('headers.html', title = f'{prev_mailbox}', headers=headers, allFetched=allFetched)
 
 @app.route('/<mailbox>/<index>', methods=['GET', 'POST'])
 def mail(mailbox, index):
    was_authenticated = user.is_active()
-   verify_login()
+   res = verify_login()
+   if(res):
+      return res
    if not was_authenticated:
-      user.imap_client.Get_All_MailBoxes()
+      try:
+         user.imap_client.Get_All_MailBoxes()
+      except:
+         flash("error occurred! Trying again...", "alert-danger")
+         return redirect('/', mailbox=mailbox, index=index)
+
    print(f'inside mail function mailbox: {mailbox}')
    prev_mailbox = mailbox
    mailbox = mailbox.replace('<', '[').replace('>', ']').replace('-', ' ').replace('$', '/')
-   user.imap_client.Select(mailbox)
-   index = int(index)
-   header = user.imap_client.fetch_mail_header(index, 1, single=True)
-   bodies = user.imap_client.fetch_body_structure(index)
+
+   try:
+      user.imap_client.Select(mailbox)
+      index = int(index)
+      header = user.imap_client.fetch_mail_header(index, 1, single=True)
+      bodies = user.imap_client.fetch_body_structure(index)
+   except:
+      flash("error occurred! Trying again...", "alert-danger")
+      return redirect('/', mailbox=mailbox, index=index)
+
    data = []
    if not bodies:
       flash(f'max index possible: {user.imap_client.total_mails}', 'alert-warning')
@@ -135,8 +178,8 @@ def mail(mailbox, index):
    if request.method == 'POST' and form.validate_on_submit():
       try:
          download_path = user.imap_client.download_attachment(index, bodies)
-      except Exception:
-         flash('Downloads failed! Try again', 'alert-danger')
+      except Exception as e:
+         flash(f'Downloads failed! Try again', 'alert-danger')
          return redirect(url_for('mail', mailbox=prev_mailbox, index=index))
       flash(f'Attachment downloaded successfully to {download_path}!', 'alert-success')
       return redirect(url_for('mail', mailbox=prev_mailbox, index=index))
@@ -144,25 +187,28 @@ def mail(mailbox, index):
 
 @app.route('/write_mail', methods=['GET', 'POST'])
 def write_mail():
-   verify_login()
-   verify_login(client='smtp')
+   res = verify_login()
+   if(res):
+      return res
+   res = verify_login(client='smtp')
+   if(res):
+      return res
    form = WriteMailForm()
    if request.method == 'POST' and form.validate_on_submit():
       TO_email = form.TO_email.data
       Subject = form.Subject.data
       Body = form.Body.data
       attachments = form.attachment.data
-      print(f'attachments: {attachments}')
+      # print(f'attachments: {attachments}')
       Attachments = []
       for attachment in attachments.split(','):
          if(len(attachment.strip()) == 0):
             continue 
          Attachments.append(attachment.strip())
-      print(Attachments) 
       try:
          user.smtp_client.send_email(TO_email, Subject, Body, Attachment = Attachments)
       except Exception as e:
-         flash('Something went wrong! Mail not sent. Try Again!', 'alert-danger')
+         flash(f'Something went wrong! Mail not sent. Try Again! {e}', 'alert-danger')
          return redirect('write_mail')
       flash('Mail sent successfully!', 'alert-success')
       return redirect('mail_success')
@@ -171,14 +217,22 @@ def write_mail():
 
 @app.route('/mail_success')
 def mail_success():
-   verify_login()
-   verify_login(client='smtp')
+   res = verify_login()
+   if(res):
+      return res
+   res = verify_login(client='smtp')
+   if(res):
+      return res
    return render_template('mail_success.html', title='Mail Sent Success')
 
 @app.route('/logout')
 def logout():
-   verify_login()
-   verify_login(client='smtp')
+   res = verify_login()
+   if(res):
+      return res
+   res = verify_login(client='smtp')
+   if(res):
+      return res
    try:
       user.imap_client.Logout()
       user.imap_client.close_connection()
@@ -194,4 +248,5 @@ def logout():
    return redirect('login')
 
 if __name__ == '__main__':
+   user = User()
    app.run(debug=True)

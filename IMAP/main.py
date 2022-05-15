@@ -63,6 +63,7 @@ class IMAP:
     CLOSE_CMD = 'a012 CLOSE'
 
     def __init__(self, email, password):
+        print("\tin __init__")
         self.mailboxes = []
         self.selected_mailbox = None
         domain = email.strip().split('@')[1].lower()
@@ -86,6 +87,7 @@ class IMAP:
 
     def Send_CMD(self, cmd):
         # self.__socket.settimeout(2)
+        print("\tin Send_CMD")
         cmd = cmd + self.CRLF
         self.__socket.send(cmd.encode())
 
@@ -109,10 +111,12 @@ class IMAP:
 
     #  Reference: https://docs.python.org/3/library/ssl.html
     def SSL_Wrapper(self):
+        print("\tin SSL_Wrapper")
         context = ssl.create_default_context()
         self.__socket = context.wrap_socket(self.__socket, server_hostname=self.HOST)
 
     def Connect(self):
+        print("\tin Connect")
         # send connection request
         try:
             self.__socket.connect((self.HOST, self.PORT))
@@ -142,6 +146,7 @@ class IMAP:
             C: a004 LOGIN joe password
             S: a004 OK LOGIN completed
         '''
+        print("\tin Login")
         cmd = self.LOGIN_CMD + self.email_id + ' ' + self.email_pwd
         code, response = self.Send_CMD(cmd)
         # print(f'Login response {response}')
@@ -153,6 +158,7 @@ class IMAP:
     ''' Authenticated State Functions '''
 
     def Get_All_MailBoxes(self):
+        print("\tin Get_All_Mailboxes")
         if self.mailboxes:
             return
         code, response = self.Send_CMD(self.LIST_CMD)
@@ -198,8 +204,9 @@ class IMAP:
 
     # Open Mailbox (Read/Write)
     def Select(self, mailbox):
-        if self.selected_mailbox == mailbox:
-            return
+        print("\tin Select")
+        # if self.selected_mailbox == mailbox:
+        #     return
         # self.total_mails = 0
         SELECT_CMD = f'a003 SELECT {mailbox}'
         code, response = self.Send_CMD(SELECT_CMD)
@@ -220,6 +227,7 @@ class IMAP:
     
     # Read Mailbox (Read Only)
     def Examine(self, mailbox):
+        print("\tin Examine")
         if self.selected_mailbox == mailbox:
             return
         self.total_mails = 0
@@ -243,6 +251,7 @@ class IMAP:
         
     # Check Status of Mailbox (Not used as such)
     def Status(self, mailbox):
+        print("\tin Status")
         STATUS_CMD = f'a005 STATUS {mailbox} (UIDNEXT MESSAGES UIDVALIDITY HIGHESTMODSEQ)'
         code, response = self.Send_CMD(STATUS_CMD)
         print(f'STATUS response: {response}\n')
@@ -253,12 +262,14 @@ class IMAP:
 
     # Disselect mailbox. Used after Select or Examine
     def close_mailbox(self):
+        print("\tin close_mailbox")
         code, response = self.Send_CMD(self.CLOSE_CMD)
         print(f'CLOSE Response: {response}')
         if code != 'OK':
             raise Exception('__CLOSE Error__')
 
     def parse_body_structure(self, bodies, item, no, index, level):
+        print("\tin parse_body_structure")
         if level > 0:
             decimal_part = (1 / 10**(level))
             int_part_len = len(str(no).split('.')[0])
@@ -266,6 +277,7 @@ class IMAP:
             no = round(no, int_part_len + level)
            
         ans = {}
+        print(item)
         split_arr = item.split(' ')
         length = len(split_arr)
         i = index
@@ -288,10 +300,17 @@ class IMAP:
             elif ele == 'charset':
                 ans[ele] = split_arr[i+1]
                 i += 1
-            elif ele == 'filename':
+            elif ele == 'name':
                 ans['attachment'] = True
-                ans[ele] = split_arr[i+1]
-                i += 1
+                filename = ""
+                while(1):
+                    ele = split_arr[i+1]
+                    if(ele == ')'):
+                        break
+                    filename += ele
+                    filename += " "
+                    i += 1
+                ans['filename'] = filename.strip()
             elif ele in ['alternative', 'related', 'mixed']:
                 valid = False
                 break
@@ -303,10 +322,11 @@ class IMAP:
         if valid:
             res[str(no)] = ans
             bodies.append(res)
-            # print(res)
+            print(res)
         return res, no, i
 
     def fetch_body_structure(self, start_index):
+        print("\tin fetch_body_structure")
         # Check start_index with max index
         print(f'Fetch body structure for index: {start_index} for {self.selected_mailbox} total mails: {self.total_mails}')
         if(start_index > self.total_mails):
@@ -378,6 +398,7 @@ class IMAP:
         '''
 
     def extract_text_html(self, start_index, bodies):
+        print("in extract_text_html")
         data = {}
         data['plain'] = ''
         data['html'] = ''
@@ -412,6 +433,7 @@ class IMAP:
         return data
 
     def download_attachment(self, start_index, bodies):
+        print("\tin download_attachment")
         # To get path of home directory Reference: https://www.studytonight.com/python-howtos/how-to-get-the-home-directory-in-python#:~:text=Use%20os%20module%20to%20get%20the%20Home%20Directory&text=path.,will%20return%20the%20path%20unchanged.
 
         home_dir_path = Path.home()
@@ -420,7 +442,8 @@ class IMAP:
         try:
             os.mkdir(root_dir_path)
         except FileExistsError:
-            print(f'{root_download_directory} already available')
+            # print(f'{root_download_directory} already available')
+            pass
         except Exception:
             raise Exception(f'{root_download_directory} can not be created!')
 
@@ -430,7 +453,8 @@ class IMAP:
         try:
             os.mkdir(mailbox_dir_path)
         except FileExistsError:
-            print(f'{mailbox_dir} already available')
+            # print(f'{mailbox_dir} already available')
+            pass
         except Exception:
             raise Exception(f'{mailbox_dir} can not be created!')
         # Download Attachments
@@ -455,9 +479,16 @@ class IMAP:
                         file.write(content)
                         file.close()
                     elif encoding == 'base64':
-                        decoded_content = base64.b64decode(content)
+                        try:
+                            decoded_content = base64.b64decode(content)
+                        except:
+                            # for outlook it has flags(SEEN) line as a last line in response
+                            lastLine = content.splitlines()[-1]
+                            content = content.replace(lastLine, "")
+                            decoded_content = base64.b64decode(content)
                         # Binary files don't required data in byte
                         if binary:
+                            print("\n============= Binary===\n")
                             file.write(decoded_content)
                         else:
                             file.write(decoded_content.decode('utf-8', errors='ignore'))
@@ -476,6 +507,7 @@ class IMAP:
         return mailbox_dir_path
 
     def fetch_body_part(self, start_index, body_part_no):
+        print("\tin fetch_body_part")
         # print(body_part_no)
         cmd = f'a225 FETCH {start_index} (FLAGS BODY[{body_part_no}])' # Reference rfc imap doc page 57
         code, response = self.Send_CMD(cmd)
@@ -497,7 +529,8 @@ class IMAP:
         # print(response)
         return response
 
-    def fetch_mail_header(self, start_index, count, single = False):
+    def fetch_mail_header(self, start_index, count, method="POST", single = False):
+        print("\tin fetch_mail_header")
         # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
         # cmd = f'a225 FETCH {start_index}:{start_index + count} (BODY.PEEK[HEADER])'
         if(self.total_mails < 1):
@@ -510,13 +543,33 @@ class IMAP:
             if code != 'OK':
                 raise Exception('__FETCH Error__')
             headers = self.parse_header(response, [], start_index)
-            return headers[0]
+            try:
+                return headers[0]
+            except:
+                return {}
 
         prev_headers = self.headers[self.selected_mailbox]
         prev_header_len = len(prev_headers)
         print(f'previously fetched headers for {self.selected_mailbox} -- {prev_header_len}')
 
-        if (prev_header_len >= self.total_mails):
+        if(prev_header_len and method == "GET" and int(prev_headers[0]['index']) < self.total_mails):
+            print(f"Got {self.total_mails - int(prev_headers[0]['index'])} New Mails")
+            start_index = int(prev_headers[0]['index'])+1
+            cmd = f'A654 FETCH {start_index}:{self.total_mails} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
+            code, response = self.Send_CMD(cmd)
+            print(f'{cmd}')
+            if code != 'OK':
+                raise Exception('__FETCH Error__')
+
+            new_headers = self.parse_header(response, [], index=start_index)
+            if(count > len(new_headers)):
+                count = len(new_headers)
+            prev_header_len = len(prev_headers)
+            for i in range(count):
+                prev_headers = [new_headers[i]] + prev_headers
+            self.headers[self.selected_mailbox] = prev_headers
+
+        if (prev_header_len >= self.total_mails or method == "GET"):
             return prev_headers
 
         if(prev_header_len == 0):
@@ -524,7 +577,7 @@ class IMAP:
         else:
             end_index = self.total_mails - prev_header_len
         start_index = end_index - count + 1
-        if(start_index < 0):
+        if(start_index <= 0):
             start_index = 1
         count = end_index - start_index + 1
 
@@ -542,9 +595,10 @@ class IMAP:
             prev_headers.append(new_headers[i])
         self.headers[self.selected_mailbox] = prev_headers
         print(f'total headers fetched: {count} starting from  index {start_index} to {end_index}')
-        return prev_headers
+        return new_headers
 
     def parse_header(self, response, headers, index):
+        print("\tin parse_header")
         header = {}
         lines = response.splitlines()
         lines.pop(-1)
@@ -557,9 +611,9 @@ class IMAP:
             if line.lower().startswith('date:'):
                 header['Date'] = line[6:]
             elif line.lower().startswith('from:'):
-                header['From'] = line[6:]
+                header['From'] = str(make_header(decode_header(line[6:])))
             elif line.lower().startswith('to:'):
-                header['To'] = line[4:]
+                header['To'] = str(make_header(decode_header(line[4:])))
             elif line.lower().startswith('bcc:'):
                 header['Bcc'] = line[5:]
             elif line.lower().startswith('subject:'):
@@ -570,13 +624,18 @@ class IMAP:
                 header['Content-Transfer-Encoding'] = line[27:]
             # Each headers end with: blank line + ')' line
             elif line[-1] == ')':
-                header['index'] = idx
-                headers.append(header)
-                header = {}
-                idx += 1
+                try:
+                    if(header['To'] and header['From']):
+                        header['index'] = idx
+                        headers.append(header)
+                        header = {}
+                        idx += 1
+                except:
+                    pass
         return headers
 
     def rename_mailbox(self, new_name):
+        print("\tin rename_mailbox")
         RENAME_CMD = f'a111 RENAME {self.selected_mailbox} {new_name}'
         code, response = self.Send_CMD(RENAME_CMD)
         print(response)
@@ -588,6 +647,7 @@ class IMAP:
         self.Select(new_name)
 
     def delete_mailbox(self):
+        print("\tin delete_mailbox")
         DELETE_CMD = f'a111 DELETE {self.selected_mailbox}'
         code, response = self.Send_CMD(DELETE_CMD)
         print(response)
@@ -597,8 +657,8 @@ class IMAP:
         self.mailboxes = []
         self.Get_All_MailBoxes()
 
-
     def Logout(self):
+        print("\tin Logout")
         code, response = self.Send_CMD(self.LOGOUT_CMD)
         print(f'logout response: {response}')
         if code != 'OK':
@@ -606,6 +666,7 @@ class IMAP:
         print('Logout Successfully!')
 
     def Noop(self):
+        print("\tin Noop")
         code, response = self.Send_CMD(self.NOOP_CMD)
         # print(f'NOOP response: {response}')
         if code != 'OK':
@@ -613,6 +674,7 @@ class IMAP:
         print('NOOP Successfully!')
 
     def close_connection(self):
+        print("\t in close_connection")
         print('\nDisconnected...')
         self.__socket.close()
     

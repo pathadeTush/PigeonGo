@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="text-center mt-3 mb-2">
-   <a href="#" class="btn btn-warning">{{mailbox}}</a>
+   <a href="#" class="btn btn-warning"><script>document.write(parseMailbox('{{mailbox}}'))</script></a>
 </div>
 <div class="text-center mt-3 mb-2">
    <a class="btn btn-outline-light" href="{{url_for('open_mailbox', mailbox=mailbox)}}">BACK</a>

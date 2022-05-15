@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
+
 <div class="text-center mt-3 mb-2">
    <a class="btn btn-outline-light" href="{{url_for('menu')}}">Go To Menu</a>
 </div>
@@ -14,10 +15,11 @@
       <tbody>
          {% for mailbox in mailboxes %}
          <tr>
-            <td><a href="{{url_for('open_mailbox', mailbox=mailbox)}}"> {{mailbox}} </a></td>
+            <td><a href="{{url_for('open_mailbox', mailbox=mailbox)}}"> <script>document.write(parseMailbox('{{mailbox}}'))</script></a></td>
          </tr>
          {% endfor %}
       </tbody>
    </table>
 </section>
+
 {% endblock content %}

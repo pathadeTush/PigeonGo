@@ -71,6 +71,7 @@ class SMTP:
     # email_pwd = os.environ.get('EMAIL_PASS')
 
     def __init__(self, email, password):
+        print("\tin __init__ SMTP")
 
         '''
             The following dialog illustrates how a client and server can start a TLS session:
@@ -106,6 +107,7 @@ class SMTP:
         self.login()
 
     def connect(self):
+        print("\tin connect SMTP")
         # send connection request
         self.__socket.settimeout(self.CONN_TOUT)
         try:
@@ -124,6 +126,7 @@ class SMTP:
         # print(f'connected to {self.HOST, self.PORT} successfully!')
 
     def say_hello(self):
+        print("\tin say_hello SMTP")
         cmd = self.HELLO_CMD
         code, response = self.send_cmd(cmd)
         if code != '250':
@@ -131,6 +134,7 @@ class SMTP:
         # print(f'hello response: {response}')
 
     def start_TLS(self):
+        print("\tin start_TLS SMTP")
         code, response = self.send_cmd(self.STARTTLS_CMD)
         # print(f'STARTTLS response: {response}')
         if code == '501':
@@ -139,6 +143,7 @@ class SMTP:
             print('TLS not available due to temporary reason')
 
     def send_cmd(self, cmd):
+        print("\tin send_cmd SMTP")
         cmd = cmd + self.CRLF
         self.__socket.send(cmd.encode('ascii'))
         response = self.__socket.recv(1024).decode(errors='ignore').rstrip('\r\t\n')
@@ -147,10 +152,12 @@ class SMTP:
      # SSL Wrapper required for security to communicate with smtp server of google
     #  Reference: https://docs.python.org/3/library/ssl.html
     def SSL_Wrapper(self):
+        print("\tin SSL_Wrapper SMTP")
         context = ssl.create_default_context()
         self.__socket = context.wrap_socket(self.__socket, server_hostname=self.HOST)
     
     def login(self):
+        print("\tin login SMTP")
 
         '''
         Examples:
@@ -206,6 +213,7 @@ class SMTP:
         print(f'Authenticated Successfully!')
     
     def send_email(self, TO_email, Subject, Body, Attachment = False):
+        print("\tin send_email SMTP")
         if Attachment:
             print("=====Sending Mail With Attachments======")
             self.send_email_with_attachment(TO_email, Subject, Body, Attachment)
@@ -222,6 +230,7 @@ class SMTP:
         self.terminate_DATA()
 
     def add_email_header(self, TO_email, Subject):
+        print("\tin add_email_header SMTP")
         FROM_email = self.email_id
         header = ''
         header += f'From: {FROM_email}' + self.CRLF
@@ -230,21 +239,26 @@ class SMTP:
         self.email += header
 
         self.config_MAIL_FROM(FROM_email)
+        print(f'to_email - {TO_email}')
         self.config_RCPT_TO(TO_email)
         self.initiate_DATA()
 
     def add_blank_line(self):
+        print("\tin add_blank_line SMTP")
         self.email += self.CRLF
 
     def add_email_body_text(self, body_text):
+        print("\tin add_email_body_text SMTP")
         self.email += body_text + self.CRLF
 
     def config_MAIL_FROM(self, email):
+        print("\tin config_MAIL_FROM SMTP")
         self.__socket.settimeout(self.MAIL_TOUT)
         try:
             cmd = self.MAIL_FROM_CMD + '<' + email + '>'
             code, response = self.send_cmd(cmd)
-        except socket.timeout():
+        except socket.timeout(Exception):
+            print("\t=============errorrr")
             raise Exception('__MAIL Timeout Crossed!__')
         self.__socket.settimeout(None)
 
@@ -253,11 +267,12 @@ class SMTP:
             raise Exception('Invalid sender email')
     
     def config_RCPT_TO(self, email):
+        print("\tin config_RCPT_TO SMTP")
         self.__socket.settimeout(self.RCPT_TOUT)
         try:
             cmd = self.RCPT_TO_CMD + '<' + email + '>'
             code, response = self.send_cmd(cmd)
-        except socket.timeout():
+        except socket.timeout(Exception):
             raise Exception('__RCPT Timeout crossed!__')
         self.__socket.settimeout(None)
         # print(f'RCPT TO response: {response}')
@@ -270,6 +285,7 @@ class SMTP:
             raise Exception('Invalid reciever email')
 
     def initiate_DATA(self):
+        print("\tin initiate_DATA SMTP")
         self.__socket.settimeout(self.DATA_INITIATION_TOUT)
         try:
             code, response = self.send_cmd(self.DATA_CMD)
@@ -280,6 +296,7 @@ class SMTP:
             raise Exception('SytaxError. Error occured in DATA cmd')
 
     def send_DATA(self, data):
+        print("\tin send_DATA SMTP")
         self.__socket.settimeout(self.DATA_BLOCK_TOUT)
         try: 
             self.__socket.send(data.encode('ascii'))
@@ -288,6 +305,7 @@ class SMTP:
         self.__socket.settimeout(None)
 
     def terminate_DATA(self):
+        print("\tin terminate_DATA SMTP")
         self.__socket.settimeout(self.DATA_TERMINATION_TOUT)
         try: 
             code, response = self.send_cmd(self.END_MSG_CMD)
@@ -302,6 +320,7 @@ class SMTP:
         print('Mail sent successfully ^_^')
 
     def send_email_with_attachment(self, TO_email, Subject, Body, attachments):
+        print("\tin send_email_with_attachment_DATA SMTP")
         self.email = ''
         boundary = '===============0331756459957505656=='
         
@@ -335,16 +354,20 @@ class SMTP:
         self.terminate_DATA()
 
     def add_contentType_MIMEVersion_to_header(self, boundary, type = 'multipart', subtype = 'mixed'):
+        print("\tin add_contentType_MIMEVersion_to_header SMTP")
         self.email += f'Content-Type: {type}/{subtype}; boundary="{boundary}"' + self.CRLF
         self.email += 'MIME-Version: 1.0' + self.CRLF
 
     def add_start_boundary(self, boundary):
+        print("\tin add_start_boundary SMTP")
         self.email += self.CRLF + '--' + f'{boundary}' + self.CRLF
     
     def add_closing_boundary(self, boundary):
+        print("\tin add_closing_boundary SMTP")
         self.email += self.CRLF + '--' f'{boundary}' + '--' + self.CRLF
 
     def add_body_part_header(self, file_path):
+        print("\tin add_body_part_header SMTP")
         # print(file_path)
         file = file_path.split('/')[-1].strip()
         mime_type = self.get_MIMEType(file)
@@ -361,6 +384,7 @@ class SMTP:
         return encoding
 
     def add_body_content(self, file_path, encoding = 'base64'):
+        print("\tin add_body_content SMTP")
         if encoding.lower().strip() in ['7bit', '8bit']:
             try:
                 file = open(file_path, 'r')
@@ -383,6 +407,7 @@ class SMTP:
             return
 
     def get_MIMEType(self, file):
+        print("\tin get_MIMEType SMTP")
         extension = file.split('.')[-1].lower().strip()
         # print(f'file = {file} extension: {extension}')
         mimefile_path = os.path.abspath('.') + '/SMTP/google_MIME_Types.txt'
@@ -403,13 +428,15 @@ class SMTP:
         return 'application/octet-stream'
 
     def quit(self):
+        print("\tin quit SMTP")
         code, response =  self.send_cmd(self.QUIT_CMD)
-        print(f'QUIT response: {response}')
+        # print(f'QUIT response: {response}')
         if code != '221':
             raise Exception('Error occured while QUIT')
         print('Quit transmission channel successfully!')
     
     def close_connection(self):
+        print("\tin close_connection SMTP")
         self.__socket.close()
         print('\nDisconnected...')
     
