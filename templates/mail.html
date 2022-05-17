@@ -1,13 +1,15 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="text-center mt-3 mb-2">
-   <a href="#" class="btn btn-warning"><script>document.write(parseMailbox('{{mailbox}}'))</script></a>
+   <a href="#" class="btn btn-warning">
+      <script>document.write(parseMailbox('{{mailbox}}'))</script>
+   </a>
 </div>
 <div class="text-center mt-3 mb-2">
    <a class="btn btn-outline-light" href="{{url_for('open_mailbox', mailbox=mailbox)}}">BACK</a>
 </div>
-<section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-8"
-  style="margin-top: 10vh;">
+<section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-8 mb-2"
+   style="margin-top: 10vh;">
    <div class="card text-dark bg-light mb-3 mt-3">
       <div class="card-header">
          <div class="d-flex justify-content-between">
@@ -19,24 +21,28 @@
          </div>
       </div>
       <div class="card-body">
-         <h6 class="card-title"><b>Subject:</b> {% if header['Subject'] %} {{header['Subject']}} {% else %} (no subject) {% endif %}</h6>
-         <p class="card-text" style="white-space: pre-line"><b>Body:</b> <br>{% if data['plain'] %}
-            {{data['plain']}}
-            {% else %}
-            (No Plain Text Body)
-            {% endif %}
+         <h6 class="card-title"><b>Subject:</b> {% if header['Subject'] %} {{header['Subject']}} {% else %} (no subject)
+            {% endif %}</h6>
+         <p class="card-text" style="white-space: pre-line">
+            <b>Body:</b>
+            {% if data['html'] %}
+         <div class="text-center mb-2">
+            <a class="btn btn-outline-primary" href="{{url_for('static', filename='html.html')}}" target="_blank">View HTML</a>
+         </div>
+         {% endif %}
+         <br>
+
+         {% if data['plain'] %}
+         {{data['plain']}}
+         {% else %}
+         (No Plain Text Body)
+         {% endif %}
          </p>
       </div>
-      {% if data['html'] %}
-      <div class="text-center mt-3 mb-2">
-         <a class="btn btn-outline-primary" href="{{url_for('static', filename='html.html')}}" target="_blank">View
-            HTML</a>
-      </div>
-      {% endif %}
       {% if data['attachment'] %}
       <p class="text-center">
          <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample"
-           aria-expanded="false" aria-controls="collapseExample">
+            aria-expanded="false" aria-controls="collapseExample">
             View Attachments
          </button>
       </p>

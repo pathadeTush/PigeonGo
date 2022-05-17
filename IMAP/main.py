@@ -121,7 +121,7 @@ class IMAP:
         try:
             self.__socket.connect((self.HOST, self.PORT))
         except Exception:
-            raise Exception('__Check your internet connection once!')
+            raise Exception('Check your internet connection once!')
 
         # verify confirmation from server
         connection_response = self.__socket.recv(1024).decode().rstrip('\r\t\n')
@@ -171,6 +171,7 @@ class IMAP:
 
         self.mailboxes = []
         self.headers = {}
+        self.minHeaderIdx = {}
 
         for line in lines:
             mailbox = line.split('"/"')[1][1:]
@@ -211,7 +212,7 @@ class IMAP:
         SELECT_CMD = f'a003 SELECT {mailbox}'
         code, response = self.Send_CMD(SELECT_CMD)
         # print(mailbox)
-        # print(f'SELECT response: {response}\n')
+        print(f'SELECT response: {response}\n')
         if code != 'OK':
             raise Exception('__SELECT Error__')
         self.selected_mailbox = mailbox
@@ -219,10 +220,15 @@ class IMAP:
         for line in lines:
             words = line.strip().split(' ')
             try:
-                if words[2] == 'EXISTS':
+                if len(words) > 2 and words[2] == 'EXISTS':
                     self.total_mails = int(words[1])
+                    if self.selected_mailbox not in self.minHeaderIdx:
+                        self.minHeaderIdx[self.selected_mailbox] = self.total_mails
             except:
-                raise Exception('Select Error')
+                if self.selected_mailbox == mailbox:
+                    pass 
+                else:
+                    raise Exception('Select Error')
         print(f'{self.selected_mailbox} selected. total mails available: {self.total_mails}')
     
     # Read Mailbox (Read Only)
@@ -532,26 +538,31 @@ class IMAP:
     def fetch_mail_header(self, start_index, count, method="POST", single = False):
         print("\tin fetch_mail_header")
         # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
-        # cmd = f'a225 FETCH {start_index}:{start_index + count} (BODY.PEEK[HEADER])'
+        # cmd = f'A225 FETCH {start_index}:{start_index + count} (BODY.PEEK[HEADER])'
         if(self.total_mails < 1):
             return []
 
         # If only 1 header to be fetched
         if(single):
             cmd = f'A654 FETCH {start_index} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
+            print(cmd)
             code, response = self.Send_CMD(cmd)
             if code != 'OK':
                 raise Exception('__FETCH Error__')
-            headers = self.parse_header(response, [], start_index)
+            headers = self.parse_header(response, [])
             try:
                 return headers[0]
             except:
-                return {}
+                raise Exception(f'__FETCH Error__: could not fetch header no. {start_index}! Try again')
 
         prev_headers = self.headers[self.selected_mailbox]
-        prev_header_len = len(prev_headers)
-        print(f'previously fetched headers for {self.selected_mailbox} -- {prev_header_len}')
+        if(self.total_mails == self.minHeaderIdx[self.selected_mailbox]):
+            prev_header_len = 0
+        else:
+            prev_header_len = self.total_mails - self.minHeaderIdx[self.selected_mailbox] + 1
+        print(f'previously fetched headers for {self.selected_mailbox} -- {len(prev_headers)}')
 
+        # check for new mails
         if(prev_header_len and method == "GET" and int(prev_headers[0]['index']) < self.total_mails):
             print(f"Got {self.total_mails - int(prev_headers[0]['index'])} New Mails")
             start_index = int(prev_headers[0]['index'])+1
@@ -561,15 +572,17 @@ class IMAP:
             if code != 'OK':
                 raise Exception('__FETCH Error__')
 
-            new_headers = self.parse_header(response, [], index=start_index)
+            new_headers = self.parse_header(response, [])
             if(count > len(new_headers)):
                 count = len(new_headers)
             prev_header_len = len(prev_headers)
             for i in range(count):
                 prev_headers = [new_headers[i]] + prev_headers
             self.headers[self.selected_mailbox] = prev_headers
+            print(f'total headers fetched: {len(new_headers)} from {start_index} to {end_index}')
 
         if (prev_header_len >= self.total_mails or method == "GET"):
+            print("return prev headers...")
             return prev_headers
 
         if(prev_header_len == 0):
@@ -587,28 +600,31 @@ class IMAP:
         if code != 'OK':
             raise Exception('__FETCH Error__')
 
-        new_headers = self.parse_header(response, [], index=start_index)
-        if(count > len(new_headers)):
-            count = len(new_headers)
+        # print(f'\n\t====== fetch response: \n{response}')
+
+        new_headers = self.parse_header(response, [])
+        count = len(new_headers)
         new_headers.reverse()
-        for i in range(count):
-            prev_headers.append(new_headers[i])
+        for header in new_headers:
+            prev_headers.append(header)
         self.headers[self.selected_mailbox] = prev_headers
-        print(f'total headers fetched: {count} starting from  index {start_index} to {end_index}')
+        self.minHeaderIdx[self.selected_mailbox] = int(new_headers[-1]['index'])
+        print(f'total headers fetched: {count} from {start_index} to {end_index}')
         return new_headers
 
-    def parse_header(self, response, headers, index):
+    def parse_header(self, response, headers):
         print("\tin parse_header")
         header = {}
         lines = response.splitlines()
         lines.pop(-1)
         lines.append(')')
-        idx = index
         for line in lines:
             line = line.strip()
             if(len(line) == 0):
                 continue
-            if line.lower().startswith('date:'):
+            if line.lower().startswith('* '):
+                header['index'] = int(line.split(' ')[1])
+            elif line.lower().startswith('date:'):
                 header['Date'] = line[6:]
             elif line.lower().startswith('from:'):
                 header['From'] = str(make_header(decode_header(line[6:])))
@@ -625,11 +641,9 @@ class IMAP:
             # Each headers end with: blank line + ')' line
             elif line[-1] == ')':
                 try:
-                    if(header['To'] and header['From']):
-                        header['index'] = idx
+                    if(header['index'] and header['To'] and header['From']):
                         headers.append(header)
                         header = {}
-                        idx += 1
                 except:
                     pass
         return headers
