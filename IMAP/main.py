@@ -86,24 +86,28 @@ class IMAP:
         self.Login()
 
     def Send_CMD(self, cmd):
-        # self.__socket.settimeout(2)
         print("\tin Send_CMD")
-        cmd = cmd + self.CRLF
-        self.__socket.send(cmd.encode())
-
-        status_code = ["OK", "NO", "BAD"]
-        complete_response = ''
-        while True:
-            response = self.__socket.recv(1024).decode('ascii', errors='ignore').rstrip('\r\t\n')
-            complete_response += response
-            try:
-                code = response.split('\n')[-1].split(' ')[1]
-            except Exception as e:
-                continue 
-            if code in status_code:
-                break
-            continue
-        
+        self.__socket.settimeout(None)
+        self.__socket.settimeout(15)
+        try:
+            cmd = cmd + self.CRLF
+            self.__socket.send(cmd.encode())
+            status_code = ["OK", "NO", "BAD"]
+            complete_response = ''
+            while True:
+                response = self.__socket.recv(1024).decode('ascii', errors='ignore').rstrip('\r\t\n')
+                complete_response += response
+                try:
+                    code = response.split('\n')[-1].split(' ')[1]
+                except Exception as e:
+                    continue 
+                if code in status_code:
+                    break
+                continue
+        except socket.timeout:
+            self.__socket.close()
+            super().__init__(self.email, self.email_pwd)
+        self.__socket.settimeout(None)
         return code, complete_response
 
 
@@ -206,9 +210,8 @@ class IMAP:
     # Open Mailbox (Read/Write)
     def Select(self, mailbox):
         print("\tin Select")
-        # if self.selected_mailbox == mailbox:
-        #     return
-        # self.total_mails = 0
+        if self.selected_mailbox == mailbox:
+            return
         SELECT_CMD = f'a003 SELECT {mailbox}'
         code, response = self.Send_CMD(SELECT_CMD)
         # print(mailbox)
@@ -283,7 +286,6 @@ class IMAP:
             no = round(no, int_part_len + level)
            
         ans = {}
-        print(item)
         split_arr = item.split(' ')
         length = len(split_arr)
         i = index
@@ -328,7 +330,6 @@ class IMAP:
         if valid:
             res[str(no)] = ans
             bodies.append(res)
-            print(res)
         return res, no, i
 
     def fetch_body_structure(self, start_index):
@@ -494,7 +495,6 @@ class IMAP:
                             decoded_content = base64.b64decode(content)
                         # Binary files don't required data in byte
                         if binary:
-                            print("\n============= Binary===\n")
                             file.write(decoded_content)
                         else:
                             file.write(decoded_content.decode('utf-8', errors='ignore'))
@@ -547,13 +547,15 @@ class IMAP:
             cmd = f'A654 FETCH {start_index} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
             print(cmd)
             code, response = self.Send_CMD(cmd)
+            print(f'\n\t====== fetch response ====== \n{response}')
+
             if code != 'OK':
                 raise Exception('__FETCH Error__')
             headers = self.parse_header(response, [])
             try:
                 return headers[0]
             except:
-                raise Exception(f'__FETCH Error__: could not fetch header no. {start_index}! Try again')
+                raise Exception(f'__FETCH Error__: could not fetch header no. {start_index}!')
 
         prev_headers = self.headers[self.selected_mailbox]
         if(self.total_mails == self.minHeaderIdx[self.selected_mailbox]):
@@ -561,25 +563,28 @@ class IMAP:
         else:
             prev_header_len = self.total_mails - self.minHeaderIdx[self.selected_mailbox] + 1
         print(f'previously fetched headers for {self.selected_mailbox} -- {len(prev_headers)}')
+        print(f'prev_header_len: {prev_header_len}')
 
         # check for new mails
-        if(prev_header_len and method == "GET" and int(prev_headers[0]['index']) < self.total_mails):
-            print(f"Got {self.total_mails - int(prev_headers[0]['index'])} New Mails")
-            start_index = int(prev_headers[0]['index'])+1
-            cmd = f'A654 FETCH {start_index}:{self.total_mails} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
-            code, response = self.Send_CMD(cmd)
-            print(f'{cmd}')
-            if code != 'OK':
-                raise Exception('__FETCH Error__')
+        # if(prev_header_len and method == "GET" and int(prev_headers[0]['index']) < self.total_mails):
+        #     print(f"Got {self.total_mails - int(prev_headers[0]['index'])} New Mails")
+        #     start_index = int(prev_headers[0]['index'])+1
+        #     cmd = f'A654 FETCH {start_index}:{self.total_mails} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
+        #     print(f'{cmd}')
+        #     code, response = self.Send_CMD(cmd)
+        #     print(f'\n\t====== fetch response: \n{response}')
 
-            new_headers = self.parse_header(response, [])
-            if(count > len(new_headers)):
-                count = len(new_headers)
-            prev_header_len = len(prev_headers)
-            for i in range(count):
-                prev_headers = [new_headers[i]] + prev_headers
-            self.headers[self.selected_mailbox] = prev_headers
-            print(f'total headers fetched: {len(new_headers)} from {start_index} to {end_index}')
+        #     if code != 'OK':
+        #         raise Exception('__FETCH Error__')
+
+        #     new_headers = self.parse_header(response, [])
+        #     if(count > len(new_headers)):
+        #         count = len(new_headers)
+        #     prev_header_len = len(prev_headers)
+        #     for i in range(count):
+        #         prev_headers = [new_headers[i]] + prev_headers
+        #     self.headers[self.selected_mailbox] = prev_headers
+        #     print(f'total headers fetched: {len(new_headers)} from {start_index} to {end_index}')
 
         if (prev_header_len >= self.total_mails or method == "GET"):
             print("return prev headers...")
@@ -600,20 +605,20 @@ class IMAP:
         if code != 'OK':
             raise Exception('__FETCH Error__')
 
-        # print(f'\n\t====== fetch response: \n{response}')
+        print(f'\n\t======= fetch response ======\n{response}')
 
         new_headers = self.parse_header(response, [])
         count = len(new_headers)
         new_headers.reverse()
         for header in new_headers:
             prev_headers.append(header)
-        self.headers[self.selected_mailbox] = prev_headers
-        self.minHeaderIdx[self.selected_mailbox] = int(new_headers[-1]['index'])
         print(f'total headers fetched: {count} from {start_index} to {end_index}')
+        self.headers[self.selected_mailbox] = prev_headers
+        if(count > 0):
+            self.minHeaderIdx[self.selected_mailbox] = int(new_headers[-1]['index'])
         return new_headers
 
     def parse_header(self, response, headers):
-        print("\tin parse_header")
         header = {}
         lines = response.splitlines()
         lines.pop(-1)
@@ -622,8 +627,13 @@ class IMAP:
             line = line.strip()
             if(len(line) == 0):
                 continue
-            if line.lower().startswith('* '):
-                header['index'] = int(line.split(' ')[1])
+            if line.lower().startswith('*'):
+                try:
+                    _ = line.split(' ')
+                    if(_[2] == 'FETCH'):
+                        header['index'] = int(_[1])
+                except:
+                    pass
             elif line.lower().startswith('date:'):
                 header['Date'] = line[6:]
             elif line.lower().startswith('from:'):
@@ -639,7 +649,7 @@ class IMAP:
             elif line.lower().startswith('content-transfer-encoding:'):
                 header['Content-Transfer-Encoding'] = line[27:]
             # Each headers end with: blank line + ')' line
-            elif line[-1] == ')':
+            elif line == ')':
                 try:
                     if(header['index'] and header['To'] and header['From']):
                         headers.append(header)

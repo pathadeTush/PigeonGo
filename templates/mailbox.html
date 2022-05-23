@@ -15,7 +15,7 @@
       <tbody>
          {% for mailbox in mailboxes %}
          <tr>
-            <td><a href="{{url_for('open_mailbox', mailbox=mailbox)}}"> <script>document.write(parseMailbox('{{mailbox}}'))</script></a></td>
+            <td><a onclick="loading('loading');" href="{{url_for('open_mailbox', mailbox=mailbox)}}"> <script>document.write(parseMailbox('{{mailbox}}'))</script></a></td>
          </tr>
          {% endfor %}
       </tbody>

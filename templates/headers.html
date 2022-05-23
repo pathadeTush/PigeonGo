@@ -1,22 +1,27 @@
 {% extends "layout.html" %}
 {% block content %}
+
 <div class="text-center mt-3 mb-2">
-   <a class="btn btn-outline-light" href="{{url_for('read_mails')}}">BACK</a>
+   <a onclick="loading();" class="btn btn-outline-light" href="{{url_for('read_mails')}}">BACK</a>
 </div>
 
 <section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-10 mb-4"
-  style="margin-top: 3vh;">
+   style="margin-top: 3vh;">
+
    <table class="table table-striped table-hover text-center">
       <thead>
          <tr>
-            <th><script>document.write(parseMailbox('{{title}}'))</script></th>
+            <th>
+               <script>document.write(parseMailbox('{{title}}'))</script>
+            </th>
          </tr>
       </thead>
       <tbody id="headers">
          {% for header in headers %}
          <tr>
             <td>
-               <a href="{{url_for('mail', mailbox=title, index=header['index'])}}">
+               <a onclick="loading();"
+                  href="{{url_for('mail', mailbox=title, index=header['index'])}}">
                   <div class="card">
                      <div class="card-body">
                         <div class="card-title d-flex justify-content-between">
@@ -35,14 +40,16 @@
          {% endfor %}
       </tbody>
    </table>
+
 </section>
 
 <script src="{{url_for('static', filename='ajax.js')}}"></script>
 
 {% if not allFetched %}
-   <div class="text-center mb-4" id="loadMoreBtn">
-      <button onclick="return fetchHeaders('{{title}}')" type="button" class="btn btn-primary btn-sm">Load More</button>
-   </div>
+<div class="text-center mb-4" id="loadMore">
+   <button onclick="return fetchHeaders('{{title}}')" type="button" class="btn btn-primary btn-sm" id="loadMoreBtn">Load
+      More</button>
+</div>
 
 {% endif %}
 {% endblock content %}

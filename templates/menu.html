@@ -11,17 +11,17 @@
       </thead>
       <tbody>
          <tr>
-            <td><a href="{{url_for('read_mails')}}">Read Mails</a></td>
+            <td><a onclick="loading();" href="{{url_for('read_mails')}}">Read Mails</a></td>
             <td><img src="{{url_for('static', filename='read-mail.png')}}" alt="..." style="width: 30px; height: 30px;">
             </td>
          </tr>
          <tr>
-            <td><a href="{{url_for('write_mail')}}">Write Mail</a></td>
+            <td><a onclick="loading();" href="{{url_for('write_mail')}}">Write Mail</a></td>
             <td><img src="{{url_for('static', filename='write-mail.png')}}" alt="..."
                  style="width: 30px; height: 30px;"></td>
          </tr>
          <tr>
-            <td><a href="{{url_for('logout')}}">Logout</a></td>
+            <td><a onclick="loading();" href="{{url_for('logout')}}">Logout</a></td>
             <td><img src="{{url_for('static', filename='logout.png')}}" alt="..." style="width: 30px; height: 30px;">
             </td>
          </tr>

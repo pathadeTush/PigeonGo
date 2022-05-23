@@ -6,7 +6,7 @@
    </a>
 </div>
 <div class="text-center mt-3 mb-2">
-   <a class="btn btn-outline-light" href="{{url_for('open_mailbox', mailbox=mailbox)}}">BACK</a>
+   <a onclick="loading();" class="btn btn-outline-light" href="{{url_for('open_mailbox', mailbox=mailbox)}}">BACK</a>
 </div>
 <section class="d-flex justify-content-center align-items-center container bg-light col-md-10 col-sm-12 col-xl-8 mb-2"
    style="margin-top: 10vh;">
@@ -41,7 +41,7 @@
       </div>
       {% if data['attachment'] %}
       <p class="text-center">
-         <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample"
+         <button onclick="loading();" class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample"
             aria-expanded="false" aria-controls="collapseExample">
             View Attachments
          </button>
@@ -57,7 +57,7 @@
             <form class="row g-3 text-center" action="" method="POST">
                {{ form.hidden_tag() }}
                <div class="col-12 mb-2">
-                  {{ form.submit(class="btn btn-outline-danger") }}
+                  {{ form.submit(class="btn btn-outline-danger")}}
                </div>
             </form>
             {% endif %}

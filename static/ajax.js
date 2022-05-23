@@ -1,4 +1,6 @@
 function fetchHeaders(mailbox) {
+  const loadMoreBtn = document.getElementById('loadMoreBtn')
+  loadMoreBtn.classList.add('disabled')
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function () {
     let lastIdx = 2;
@@ -13,6 +15,7 @@ function fetchHeaders(mailbox) {
         let col = document.createElement('td');
         let a = document.createElement('a');
         a.href = `/${mailbox}/${headers[i].index}`;
+        a.onclick = () => loading();
         let card = document.createElement('div');
         card.classList.add('card');
         let cardBody = document.createElement('div');
@@ -50,9 +53,10 @@ function fetchHeaders(mailbox) {
 
         lastIdx = `${headers[i].index}` 
       }
+      loadMoreBtn.classList.remove('disabled')
       if(lastIdx <= 1){
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
-        loadMoreBtn.style.display = "none";
+        const loadMore = document.getElementById('loadMore');
+        loadMore.style.display = "none";
       }
     }
   };

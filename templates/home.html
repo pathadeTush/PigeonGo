@@ -85,11 +85,11 @@
          nisi assumenda?</p>
 
       {% if 'loggedin' in session %}
-      <a href="{{url_for('menu')}}">
+      <a onclick="loading();" href="{{url_for('menu')}}">
          <div class="button">Getting Started</div>
       </a>
       {% else %}
-      <a href="{{url_for('login')}}">
+      <a onclick="loading();" href="{{url_for('login')}}">
          <div class="button">Getting Started</div>
       </a>
       {% endif %}
