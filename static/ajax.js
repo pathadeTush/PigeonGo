@@ -1,4 +1,8 @@
 function fetchHeaders(mailbox) {
+  // Disable clicks
+  document.getElementById('body').style.pointerEvents = "none";
+  document.getElementById('loading').style.display = "block";
+
   const loadMoreBtn = document.getElementById('loadMoreBtn')
   loadMoreBtn.classList.add('disabled')
   var xhttp = new XMLHttpRequest();
@@ -58,6 +62,10 @@ function fetchHeaders(mailbox) {
         const loadMore = document.getElementById('loadMore');
         loadMore.style.display = "none";
       }
+
+      // enable clicks
+      document.getElementById('body').style.pointerEvents = "auto";
+      document.getElementById('loading').style.display = "none";
     }
   };
   

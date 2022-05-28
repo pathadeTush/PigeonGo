@@ -20,7 +20,7 @@
       }
 
       body {
-       background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+       background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
             url({{url_for('static', filename='bg.jpg')}});
          background-position: center;
          background-size: cover;
@@ -36,8 +36,8 @@
 
       .content {
          margin: auto;
-         margin-top: 16rem;
-         text-align: center;
+         margin-top: 12rem;
+         text-align: justify;
          width: 30%;
          font-size: large;
       }
@@ -45,6 +45,10 @@
       @media (max-width: 798px) {
          .content {
             width: 60%;
+            margin-top: 5rem;
+         }
+         .button{
+            margin-top: 2rem;
          }
       }
 
@@ -52,7 +56,7 @@
          width: max-content;
          text-align: center;
          margin: auto;
-         margin-top: 3em;
+         margin-top: 5em;
          border: 2px solid var(--btn-color);
          border-radius: 5px;
          padding: 0.8em;
@@ -79,22 +83,39 @@
 
    <h1 class="Heading">IMAP-SMTP Client</h1>
 
-   <section>
-      <p class="content">Lorem ipsum dolor sit amet consectetur adipisicing elit. Doloribus ipsam dolorum tenetur natus
-         dolore delectus tempore aliquid rerum. Maxime iure quos incidunt quisquam sequi dolores asperiores quibusdam ut
-         nisi assumenda?</p>
-
-      {% if 'loggedin' in session %}
-      <a onclick="loading();" href="{{url_for('menu')}}">
-         <div class="button">Getting Started</div>
-      </a>
-      {% else %}
-      <a onclick="loading();" href="{{url_for('login')}}">
-         <div class="button">Getting Started</div>
-      </a>
-      {% endif %}
-   </section>
-
+   <div style="height: 90vh; display: flex; flex-direction: column; justify-content: space-between;">
+      <section style="height: 70%;">
+         <p class="content">Lorem ipsum dolor sit amet consectetur adipisicing elit. Doloribus ipsam dolorum tenetur natus
+            dolore delectus tempore aliquid rerum. Maxime iure quos incidunt quisquam sequi dolores asperiores quibusdam ut
+            nisi assumenda?</p>
+   
+         {% if 'loggedin' in session %}
+         <a onclick="loading();" href="{{url_for('menu')}}">
+            <div class="button">Getting Started</div>
+         </a>
+         {% else %}
+         <a onclick="loading();" href="{{url_for('login')}}">
+            <div class="button">Getting Started</div>
+         </a>
+         {% endif %}
+      </section>
+   
+      <!-- footer -->
+      <footer style="width:fit-content; margin:auto;" class="bg-dark text-center text-muted">
+         <!-- Copyright -->
+         <div class="text-center pb-2">
+            © <span id="year"></span> Copyright: email-client
+            <div class="text-center">Developed by - <a style="text-decoration: none; color:whitesmoke;" href="https://github.com/pathadeTush" target="_blank">Tushar Pathade</a></div>
+         </div>
+   
+         <script>
+            var date = new Date().getFullYear();
+            document.getElementById("year").innerHTML = date;
+         </script>
+   
+         <!-- Copyright -->
+      </footer>
+   </div>
 </body>
 
 </html>

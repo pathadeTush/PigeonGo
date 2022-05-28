@@ -41,7 +41,7 @@
       </div>
       {% if data['attachment'] %}
       <p class="text-center">
-         <button onclick="loading();" class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample"
+         <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample"
             aria-expanded="false" aria-controls="collapseExample">
             View Attachments
          </button>
@@ -57,7 +57,7 @@
             <form class="row g-3 text-center" action="" method="POST">
                {{ form.hidden_tag() }}
                <div class="col-12 mb-2">
-                  {{ form.submit(class="btn btn-outline-danger")}}
+                  {{ form.submit(class="btn btn-outline-danger", onclick="loading();")}}
                </div>
             </form>
             {% endif %}

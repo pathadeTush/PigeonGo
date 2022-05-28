@@ -257,12 +257,12 @@ class SMTP:
         try:
             cmd = self.MAIL_FROM_CMD + '<' + email + '>'
             code, response = self.send_cmd(cmd)
-        except socket.timeout(Exception):
+        except socket.timeout:
             print("\t=============errorrr")
             raise Exception('__MAIL Timeout Crossed!__')
         self.__socket.settimeout(None)
-
-        # print(f'MAIL FROM response: {response}')
+        print(cmd)
+        print(f'MAIL FROM response: {response}')
         if code != '250':
             raise Exception('Invalid sender email')
     
@@ -272,10 +272,10 @@ class SMTP:
         try:
             cmd = self.RCPT_TO_CMD + '<' + email + '>'
             code, response = self.send_cmd(cmd)
-        except socket.timeout(Exception):
+        except socket.timeout:
             raise Exception('__RCPT Timeout crossed!__')
         self.__socket.settimeout(None)
-        # print(f'RCPT TO response: {response}')
+        print(f'RCPT TO response: {response}')
 
         if code == '551':
             email = response.split('>')[0].split('<')[1]
@@ -337,7 +337,7 @@ class SMTP:
         # Boundary
         self.add_start_boundary(boundary)
         # Blank Line After Header
-        self.add_blank_line()
+        # self.add_blank_line()
         # Body Part
         body = Body
         self.email += body + self.CRLF

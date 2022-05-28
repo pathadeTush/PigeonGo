@@ -6,6 +6,7 @@ import quopri as QP
 import base64
 from pathlib import Path
 from email.header import decode_header, make_header
+# from app import verify_login
 '''
     imap.gmail.com
     Requires SSL: Yes 
@@ -88,7 +89,7 @@ class IMAP:
     def Send_CMD(self, cmd):
         print("\tin Send_CMD")
         self.__socket.settimeout(None)
-        self.__socket.settimeout(15)
+        self.__socket.settimeout(10)
         try:
             cmd = cmd + self.CRLF
             self.__socket.send(cmd.encode())
@@ -105,8 +106,7 @@ class IMAP:
                     break
                 continue
         except socket.timeout:
-            self.__socket.close()
-            super().__init__(self.email, self.email_pwd)
+            raise Exception("Check your internet connection once!")
         self.__socket.settimeout(None)
         return code, complete_response
 
@@ -535,7 +535,7 @@ class IMAP:
         # print(response)
         return response
 
-    def fetch_mail_header(self, start_index, count, method="POST", single = False):
+    def fetch_mail_header(self, start_index, count, single = False):
         print("\tin fetch_mail_header")
         # A654 FETCH 2:4 (FLAGS BODY[HEADER.FIELDS (DATE FROM)])
         # cmd = f'A225 FETCH {start_index}:{start_index + count} (BODY.PEEK[HEADER])'
@@ -545,9 +545,9 @@ class IMAP:
         # If only 1 header to be fetched
         if(single):
             cmd = f'A654 FETCH {start_index} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
-            print(cmd)
+            # print(cmd)
             code, response = self.Send_CMD(cmd)
-            print(f'\n\t====== fetch response ====== \n{response}')
+            # print(f'\n\t====== fetch response ====== \n{response}')
 
             if code != 'OK':
                 raise Exception('__FETCH Error__')
@@ -586,10 +586,6 @@ class IMAP:
         #     self.headers[self.selected_mailbox] = prev_headers
         #     print(f'total headers fetched: {len(new_headers)} from {start_index} to {end_index}')
 
-        if (prev_header_len >= self.total_mails or method == "GET"):
-            print("return prev headers...")
-            return prev_headers
-
         if(prev_header_len == 0):
             end_index = self.total_mails
         else:
@@ -601,11 +597,11 @@ class IMAP:
 
         cmd = f'A654 FETCH {start_index}:{end_index} (BODY[HEADER.FIELDS (DATE SUBJECT FROM TO BCC Content-Type Content-Transfer-Encoding)])'
         code, response = self.Send_CMD(cmd)
-        print(f'{cmd}')
+        # print(f'{cmd}')
         if code != 'OK':
             raise Exception('__FETCH Error__')
 
-        print(f'\n\t======= fetch response ======\n{response}')
+        # print(f'\n\t======= fetch response ======\n{response}')
 
         new_headers = self.parse_header(response, [])
         count = len(new_headers)
@@ -625,9 +621,7 @@ class IMAP:
         lines.append(')')
         for line in lines:
             line = line.strip()
-            if(len(line) == 0):
-                continue
-            if line.lower().startswith('*'):
+            if line.startswith('*'):
                 try:
                     _ = line.split(' ')
                     if(_[2] == 'FETCH'):
@@ -648,8 +642,8 @@ class IMAP:
                 header['Content-Type'] = line[14:]
             elif line.lower().startswith('content-transfer-encoding:'):
                 header['Content-Transfer-Encoding'] = line[27:]
-            # Each headers end with: blank line + ')' line
-            elif line == ')':
+            # Each headers end with: blank line
+            elif len(line) == 0:
                 try:
                     if(header['index'] and header['To'] and header['From']):
                         headers.append(header)
