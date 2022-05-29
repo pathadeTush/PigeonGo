@@ -41,19 +41,19 @@ smtp_servers['coep.ac.in'] = MAIL_SERVER('smtp.office365.com', 587)
 class SMTP:
 
     # Timeouts as per RFC 5321  section 4.5.3.2 https://datatracker.ietf.org/doc/html/rfc5321#section-4.5.3.2
-    # CONN_TOUT = 300 # 5 min
-    # MAIL_TOUT = 300 # 5 min
-    # RCPT_TOUT = 300 # 5 min
-    # DATA_INITIATION_TOUT = 120 # 2 min
-    # DATA_BLOCK_TOUT = 180 # 3 min
-    # DATA_TERMINATION_TOUT = 600 # 10 min
+    CONN_TOUT = 300 # 5 min
+    MAIL_TOUT = 300 # 5 min
+    RCPT_TOUT = 300 # 5 min
+    DATA_INITIATION_TOUT = 120 # 2 min
+    DATA_BLOCK_TOUT = 180 # 3 min
+    DATA_TERMINATION_TOUT = 600 # 10 min
 
-    CONN_TOUT = None # 5 min
-    MAIL_TOUT = None # 5 min
-    RCPT_TOUT = None # 5 min
-    DATA_INITIATION_TOUT = None # 2 min
-    DATA_BLOCK_TOUT = None # 3 min
-    DATA_TERMINATION_TOUT = None # 10 min
+    # CONN_TOUT = None # 5 min
+    # MAIL_TOUT = None # 5 min
+    # RCPT_TOUT = None # 5 min
+    # DATA_INITIATION_TOUT = None # 2 min
+    # DATA_BLOCK_TOUT = None # 3 min
+    # DATA_TERMINATION_TOUT = None # 10 min
 
 
     # Commands as per RFC 5321 https://datatracker.ietf.org/doc/html/rfc5321
@@ -144,9 +144,15 @@ class SMTP:
 
     def send_cmd(self, cmd):
         print("\tin send_cmd SMTP")
+        self.__socket.settimeout(60)
         cmd = cmd + self.CRLF
-        self.__socket.send(cmd.encode('ascii'))
-        response = self.__socket.recv(1024).decode(errors='ignore').rstrip('\r\t\n')
+        try:
+            self.__socket.send(cmd.encode('ascii'))
+            response = self.__socket.recv(1024).decode(errors='ignore').rstrip('\r\t\n')
+        except socket.timeout:
+            self.__socket.settimeout(None)
+            raise Exception('Looks like u have bad network! Try again...')
+        self.__socket.settimeout(None)
         return response[:3], response
 
      # SSL Wrapper required for security to communicate with smtp server of google
@@ -430,7 +436,7 @@ class SMTP:
     def quit(self):
         print("\tin quit SMTP")
         code, response =  self.send_cmd(self.QUIT_CMD)
-        # print(f'QUIT response: {response}')
+        print(f'QUIT response: {response}')
         if code != '221':
             raise Exception('Error occured while QUIT')
         print('Quit transmission channel successfully!')

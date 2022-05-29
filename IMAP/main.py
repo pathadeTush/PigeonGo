@@ -89,7 +89,7 @@ class IMAP:
     def Send_CMD(self, cmd):
         print("\tin Send_CMD")
         self.__socket.settimeout(None)
-        self.__socket.settimeout(10)
+        self.__socket.settimeout(60)
         try:
             cmd = cmd + self.CRLF
             self.__socket.send(cmd.encode())
@@ -106,7 +106,8 @@ class IMAP:
                     break
                 continue
         except socket.timeout:
-            raise Exception("Check your internet connection once!")
+            self.__socket.settimeout(None)
+            raise Exception("Looks like u have bad network! Try again...")
         self.__socket.settimeout(None)
         return code, complete_response
 

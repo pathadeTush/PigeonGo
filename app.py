@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash, jsonify
 from forms import LoginForm, LoadMoreMailForm, DownloadAttachmentForm, WriteMailForm
+from werkzeug.utils import secure_filename
 from IMAP.main import IMAP
 from SMTP.main import SMTP
 import os
@@ -226,12 +227,16 @@ def write_mail():
       Subject = form.Subject.data
       Body = form.Body.data
       attachments = form.attachment.data
-      # print(f'attachments: {attachments}')
       Attachments = []
       for attachment in attachments.split(','):
          if(len(attachment.strip()) == 0):
             continue 
          Attachments.append(attachment.strip())
+      # for attachment in attachments:
+      #    filename = secure_filename(attachment.filename)
+      #    mimetype = attachment.mimetype
+      #    Attachments.append({'filename':filename, 'mimetype':mimetype})
+      # print(f'attachments: {Attachments}')
       try:
          user.smtp_client.send_email(TO_email, Subject, Body, Attachment = Attachments)
       except Exception as e:
