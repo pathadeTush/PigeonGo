@@ -3,6 +3,7 @@ import ssl
 import os
 import base64
 import time
+from app import app
 
 '''
     TLS is successor to SSL
@@ -348,10 +349,10 @@ class SMTP:
         body = Body
         self.email += body + self.CRLF
 
-        for file_path in attachments:
+        for attachment in attachments:
             self.add_start_boundary(boundary)
-            encoding = self.add_body_part_header(file_path)
-            self.add_body_content(file_path, encoding)
+            encoding = self.add_body_part_header(attachment)
+            self.add_body_content(attachment, encoding)
 
         self.add_closing_boundary(boundary)
 
@@ -372,13 +373,15 @@ class SMTP:
         print("\tin add_closing_boundary SMTP")
         self.email += self.CRLF + '--' f'{boundary}' + '--' + self.CRLF
 
-    def add_body_part_header(self, file_path):
+    def add_body_part_header(self, attachment):
         print("\tin add_body_part_header SMTP")
-        # print(file_path)
-        file = file_path.split('/')[-1].strip()
-        mime_type = self.get_MIMEType(file)
-        # print(mime_type)
-        _ = mime_type.split('/')
+        # print(attachment)
+        filename = attachment['filename'].strip()
+        mimetype = attachment['mimetype']
+        if not mimetype:
+            mimetype = self.get_MIMEType(filename)
+        # print(mimetype)
+        _ = mimetype.split('/')
         type, subtype = _[0].strip(), _[1].strip()
         if type == 'text':
             encoding = '7bit'
@@ -386,11 +389,12 @@ class SMTP:
             encoding = 'base64'
         self.email += f'Content-Type: {type}/{subtype};' + self.CRLF
         self.email += 'Content-Transfer-Encoding: ' + f'{encoding}' + self.CRLF
-        self.email += 'Content-Disposition: attachement; filename=' + f'{file}' + self.CRLF
+        self.email += 'Content-Disposition: attachment; filename=' + f'{filename}' + self.CRLF
         return encoding
 
-    def add_body_content(self, file_path, encoding = 'base64'):
+    def add_body_content(self, attachment, encoding = 'base64'):
         print("\tin add_body_content SMTP")
+        file_path = os.path.join(app.config['ATTACHMENT_DIR'], attachment['filename'])
         if encoding.lower().strip() in ['7bit', '8bit']:
             try:
                 file = open(file_path, 'r')
@@ -426,11 +430,11 @@ class SMTP:
 
         for line in lines:
             _ = line.split('|')
-            mime_type, extensions = _[0].strip(), _[1].strip().split(',')
+            mimetype, extensions = _[0].strip(), _[1].strip().split(',')
             if extension in extensions:
-                print(mime_type)
-                return mime_type
-        # print('mime_type not found')
+                print(mimetype)
+                return mimetype
+        # print('mimetype not found')
         return 'application/octet-stream'
 
     def quit(self):

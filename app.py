@@ -1,8 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash, jsonify
 from forms import LoginForm, LoadMoreMailForm, DownloadAttachmentForm, WriteMailForm
 from werkzeug.utils import secure_filename
-from IMAP.main import IMAP
-from SMTP.main import SMTP
 import os
 
 class User():
@@ -41,6 +39,11 @@ def verify_login(client = 'imap'):
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('IMAP_SMTP_KEY')
+attachment_dir = os.path.join(os.getcwd(), 'attachments')
+if not os.path.isdir(attachment_dir):
+   print("nooo")
+   os.mkdir(attachment_dir)
+app.config['ATTACHMENT_DIR'] = attachment_dir
 user = User()
 
 @app.route('/')
@@ -227,24 +230,30 @@ def write_mail():
       Subject = form.Subject.data
       Body = form.Body.data
       attachments = form.attachment.data
+      print(attachments, len(attachments))
       Attachments = []
-      for attachment in attachments.split(','):
-         if(len(attachment.strip()) == 0):
-            continue 
-         Attachments.append(attachment.strip())
-      # for attachment in attachments:
-      #    filename = secure_filename(attachment.filename)
-      #    mimetype = attachment.mimetype
-      #    Attachments.append({'filename':filename, 'mimetype':mimetype})
-      # print(f'attachments: {Attachments}')
+      if not(len(attachments) == 1 and attachments[0].filename == ''):
+         for attachment in attachments:
+            filename = secure_filename(attachment.filename)
+            mimetype = attachment.mimetype
+            Attachments.append({'filename':filename, 'mimetype':mimetype})
+            try:
+               attachment.save(os.path.join(attachment_dir, filename))
+            except:
+               pass
+               flash('invalid file', 'alert-warning')
+               return redirect(url_for('write_mail'))
+      print(f'attachments: {Attachments}')
       try:
          user.smtp_client.send_email(TO_email, Subject, Body, Attachment = Attachments)
       except Exception as e:
+         empty_folder(attachment_dir)
          res = verify_login()
          if(res):
             return res
          flash(f'Something went wrong! Mail not sent. - {e} - Try Again!', 'alert-danger')
          return redirect(url_for('write_mail'))
+      empty_folder(attachment_dir)
       flash('Mail sent successfully!', 'alert-success')
       return redirect(url_for('mail_success'))
    return render_template('write_mail.html', title='Write Mail', form=form)
@@ -281,5 +290,12 @@ def logout():
    flash('logout successfully!', 'alert-success')
    return redirect(url_for('login'))
 
+def empty_folder(folder):
+   for file in os.listdir(folder):
+      os.remove(os.path.join(folder, file))
+
+
 if __name__ == '__main__':
+   from IMAP.main import IMAP
+   from SMTP.main import SMTP
    app.run(debug=True)
