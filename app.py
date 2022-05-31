@@ -45,11 +45,17 @@ def verify_client(client = 'imap'):
 
 load_dotenv()
 env_vars = dotenv_values(".env")
-FERNET_KEY = bytes(env_vars['FERNET_KEY'], 'utf-8')
+try:
+   FERNET_KEY = bytes(env_vars['FERNET_KEY'], 'utf-8')
+except:
+   FERNET_KEY = os.environ.get('FERNET_KEY')
 fernet = Fernet(FERNET_KEY)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = env_vars['SECRET_KEY']
+try:
+   app.config['SECRET_KEY'] = env_vars['SECRET_KEY']
+except:
+   app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 attachment_dir = os.path.join(os.getcwd(), 'attachments')
 if not os.path.isdir(attachment_dir):
    os.mkdir(attachment_dir)
