@@ -43,14 +43,6 @@ def verify_client(client = 'imap'):
       user.smtp_client.close_connection()
       user.load_client(client)
 
-def verify_clients():
-   res = verify_client('imap')
-   if res:
-      return res
-   res = verify_client('smtp')
-   if res:
-      return res
-
 load_dotenv()
 env_vars = dotenv_values(".env")
 FERNET_KEY = bytes(env_vars['FERNET_KEY'], 'utf-8')
