@@ -1,20 +1,23 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash, jsonify
 from forms import LoginForm, LoadMoreMailForm, DownloadAttachmentForm, WriteMailForm
 from werkzeug.utils import secure_filename
+from cryptography.fernet import Fernet
+from dotenv import load_dotenv, dotenv_values
 import os
 
 class User():
    def __init__(self, imap_client=None, smtp_client=None):
-      print("\n\t===== User instantiated ====")
+      # print("\n\t===== User instantiated ====")
       self.imap_client = imap_client
       self.smtp_client = smtp_client
-   def load_user(self, client='imap'):
+   def load_client(self, client='imap'):
       if 'email' not in session or 'password' not in session:
          # raise Exception('Login Credientials not found in session')
          flash('Login Credientials not found in session', 'alert-danger')
          return redirect('login')
       email = session['email']
       password = session['password']
+      password = fernet.decrypt(password).decode()
       try:
          if client == 'imap':
             self.imap_client = IMAP(email, password)
@@ -29,21 +32,37 @@ class User():
          return not(self.smtp_client == None)
 
 
-def verify_login(client = 'imap'):
+def verify_client(client = 'imap'):
    if 'loggedin' not in session:
       flash('Not logged in', 'alert-danger')
-      return redirect('login')
+      return redirect(url_for('login'))
    if not user.is_active(client):
-      print(f'logging again for {client} client')
-      user.load_user(client)
+      # print(f'logging again for {client} client')
+      user.load_client(client)
+   elif client == 'smtp' and user.smtp_client.pending:
+      user.smtp_client.close_connection()
+      user.load_client(client)
+
+def verify_clients():
+   res = verify_client('imap')
+   if res:
+      return res
+   res = verify_client('smtp')
+   if res:
+      return res
+
+load_dotenv()
+env_vars = dotenv_values(".env")
+FERNET_KEY = bytes(env_vars['FERNET_KEY'], 'utf-8')
+fernet = Fernet(FERNET_KEY)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('IMAP_SMTP_KEY')
+app.config['SECRET_KEY'] = env_vars['SECRET_KEY']
 attachment_dir = os.path.join(os.getcwd(), 'attachments')
 if not os.path.isdir(attachment_dir):
-   print("nooo")
    os.mkdir(attachment_dir)
 app.config['ATTACHMENT_DIR'] = attachment_dir
+
 user = User()
 
 @app.route('/')
@@ -55,7 +74,7 @@ def home():
 def login():
    if 'loggedin' in session and session['loggedin']:
       if not user.is_active():
-         user.load_user()
+         user.load_client()
       flash('Already logged in', 'alert-warning')
       return redirect(url_for('menu'))
    form = LoginForm()
@@ -68,6 +87,7 @@ def login():
          flash(f'error occurred - {e}', 'alert-danger')
          return redirect(url_for('login'))
       session['email'] = email
+      password = fernet.encrypt(password.encode())
       session['password'] = password
       session['loggedin'] = True
       flash('Logged in successfully!', 'alert-success')
@@ -76,20 +96,20 @@ def login():
 
 @app.route('/menu')
 def menu():
-   res = verify_login()
+   res = verify_client()
    if(res):
       return res
    return render_template('menu.html', title='menu')
 
 @app.route('/read_mails')
 def read_mails():
-   res = verify_login()
+   res = verify_client()
    if(res):
       return res
    try:
       user.imap_client.Get_All_MailBoxes()
    except Exception as e:
-      res = verify_login()
+      res = verify_client()
       if(res):
          return res
       flash(f"error occurred! - {e} - Trying again...", "alert-danger")
@@ -106,7 +126,7 @@ def read_mails():
 @app.route('/open_mailbox/<mailbox>', methods=['GET', 'POST'])
 def open_mailbox(mailbox):
    was_active = user.is_active()
-   res = verify_login()
+   res = verify_client()
    if(res):
       return res
    prev_mailbox = mailbox
@@ -115,7 +135,7 @@ def open_mailbox(mailbox):
       try:
          user.imap_client.Get_All_MailBoxes()
       except Exception as e:
-         res = verify_login()
+         res = verify_client()
          if(res):
             return res
          flash(f"error occurred! - {e} - Try again...", "alert-danger")
@@ -125,7 +145,7 @@ def open_mailbox(mailbox):
       user.imap_client.Select(mailbox)
       total_mails = user.imap_client.total_mails
    except Exception as e:
-      res = verify_login()
+      res = verify_client()
       if(res):
          return res
       flash(f"error occurred! - {e} - Try again...", "alert-danger")
@@ -136,7 +156,7 @@ def open_mailbox(mailbox):
       try:
          headers = user.imap_client.fetch_mail_header(1, mail_buffer)
       except Exception as e:
-         res = verify_login()
+         res = verify_client()
          if(res):
             return res
          flash(f"error occurred! - {e} - Try again...", "alert-danger")
@@ -148,7 +168,7 @@ def open_mailbox(mailbox):
          try:
             headers = user.imap_client.fetch_mail_header(1, mail_buffer)
          except Exception as e:
-            res = verify_login()
+            res = verify_client()
             if(res):
                return res
             flash(f"error occurred! - {e} - Trying again...", "alert-danger")
@@ -161,14 +181,14 @@ def open_mailbox(mailbox):
 @app.route('/<mailbox>/<index>', methods=['GET', 'POST'])
 def mail(mailbox, index):
    was_active = user.is_active()
-   res = verify_login()
+   res = verify_client()
    if(res):
       return res
    if not was_active:
       try:
          user.imap_client.Get_All_MailBoxes()
       except Exception as e:
-         res = verify_login()
+         res = verify_client()
          if(res):
             return res
          flash(f"error occurred! - {e} - Try refereshing page...", "alert-danger")
@@ -183,7 +203,7 @@ def mail(mailbox, index):
       header = user.imap_client.fetch_mail_header(index, 1, single=True)
       bodies = user.imap_client.fetch_body_structure(index)
    except Exception as e:
-      res = verify_login()
+      res = verify_client()
       if(res):
          return res
       flash(f"error occurred! - {e} Try again...", "alert-danger")
@@ -207,7 +227,7 @@ def mail(mailbox, index):
       try:
          download_path = user.imap_client.download_attachment(index, bodies)
       except Exception as e:
-         res = verify_login()
+         res = verify_client()
          if(res):
             return res
          flash(f'Downloads failed! - {e} - Try again', 'alert-danger')
@@ -218,10 +238,7 @@ def mail(mailbox, index):
 
 @app.route('/write_mail', methods=['GET', 'POST'])
 def write_mail():
-   res = verify_login()
-   if(res):
-      return res
-   res = verify_login(client='smtp')
+   res = verify_client('smtp')
    if(res):
       return res
    form = WriteMailForm()
@@ -230,7 +247,7 @@ def write_mail():
       Subject = form.Subject.data
       Body = form.Body.data
       attachments = form.attachment.data
-      print(attachments, len(attachments))
+      # print(attachments, len(attachments))
       Attachments = []
       if not(len(attachments) == 1 and attachments[0].filename == ''):
          for attachment in attachments:
@@ -243,12 +260,12 @@ def write_mail():
                pass
                flash('invalid file', 'alert-warning')
                return redirect(url_for('write_mail'))
-      print(f'attachments: {Attachments}')
+      # print(f'attachments: {Attachments}')
       try:
          user.smtp_client.send_email(TO_email, Subject, Body, Attachment = Attachments)
       except Exception as e:
          empty_folder(attachment_dir)
-         res = verify_login()
+         res = verify_client('smtp')
          if(res):
             return res
          flash(f'Something went wrong! Mail not sent. - {e} - Try Again!', 'alert-danger')
@@ -260,32 +277,25 @@ def write_mail():
 
 @app.route('/mail_success')
 def mail_success():
-   res = verify_login()
-   if(res):
-      return res
-   res = verify_login(client='smtp')
+   res = verify_client('smtp')
    if(res):
       return res
    return render_template('mail_success.html', title='Mail Sent Success')
 
 @app.route('/logout')
 def logout():
-   res = verify_login()
-   if(res):
-      return res
-   res = verify_login(client='smtp')
-   if(res):
-      return res
+   if 'loggedin' not in session:
+      flash('Not logged in', 'alert-danger')
+      return redirect(url_for('login'))
    try:
-      user.imap_client.Logout()
-      user.imap_client.close_connection()
-      user.imap_client = None
-      user.smtp_client.quit()
-      user.smtp_client.close_connection()
-      user.smtp_client = None
-   except Exception as e:
-      flash(f'Logout failed! - {e}', 'alert-warning')
-      return redirect(url_for('menu'))
+      if user.is_active('imap'):
+         user.imap_client.close_connection()
+      if user.is_active('smtp'):
+         user.smtp_client.close_connection()
+   except:
+      pass
+   user.imap_client = None
+   user.smtp_client = None
    session.clear()
    flash('logout successfully!', 'alert-success')
    return redirect(url_for('login'))
@@ -298,4 +308,4 @@ def empty_folder(folder):
 if __name__ == '__main__':
    from IMAP.main import IMAP
    from SMTP.main import SMTP
-   app.run(debug=True)
+   app.run(debug=False)
