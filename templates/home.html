@@ -5,7 +5,14 @@
    <meta charset="UTF-8">
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Home</title>
+
+   <!-- Bootstrap CSS -->
+   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+      integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA=="
+      crossorigin="anonymous" />
+
+   <title>PigeonGo</title>
 
    <style>
       :root {
@@ -32,24 +39,6 @@
       .Heading {
          text-align: center;
          margin-top: 4rem;
-      }
-
-      .content {
-         margin: auto;
-         margin-top: 12rem;
-         text-align: justify;
-         width: 30%;
-         font-size: large;
-      }
-
-      @media (max-width: 798px) {
-         .content {
-            width: 60%;
-            margin-top: 5rem;
-         }
-         .button{
-            margin-top: 2rem;
-         }
       }
 
       .button {
@@ -81,13 +70,13 @@
 
 <body>
 
-   <h1 class="Heading">IMAP-SMTP Client</h1>
+   <h1 class="Heading"> <b>PigeonGo</b> - An Email Client</h1>
 
-   <div style="height: 90vh; display: flex; flex-direction: column; justify-content: space-between;">
-      <section style="height: 70%;">
-         <p class="content">Lorem ipsum dolor sit amet consectetur adipisicing elit. Doloribus ipsam dolorum tenetur natus
-            dolore delectus tempore aliquid rerum. Maxime iure quos incidunt quisquam sequi dolores asperiores quibusdam ut
-            nisi assumenda?</p>
+   <div class="d-flex flex-column justify-content-between mt-4 mb-1" style="height: 90%;">
+      <section class="text-center p-3" style="height: 40%; margin-top: 5rem;">
+         <p style="color: whitesmoke;">
+            <b>PigeonGo</b> is an opensource email client which works with popular email services like Gmail and outlook.
+         </p>
    
          {% if 'loggedin' in session %}
          <a onclick="loading();" href="{{url_for('menu')}}">
@@ -101,7 +90,7 @@
       </section>
    
       <!-- footer -->
-      <footer style="width:fit-content; margin:auto;" class="bg-dark text-center text-muted">
+      <footer class="mb-3" style="height: 20%;">
          <!-- Copyright -->
          <div class="text-center pb-2">
             © <span id="year"></span> Copyright: email-client

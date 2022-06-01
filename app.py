@@ -3,7 +3,25 @@ from forms import LoginForm, LoadMoreMailForm, DownloadAttachmentForm, WriteMail
 from werkzeug.utils import secure_filename
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv, dotenv_values
+from IMAP.main import IMAP
+from SMTP.main import SMTP
 import os
+
+load_dotenv()
+env_vars = dotenv_values(".env")
+app = Flask(__name__)
+try:
+   FERNET_KEY = bytes(env_vars['FERNET_KEY'], 'utf-8')
+   app.config['SECRET_KEY'] = env_vars['SECRET_KEY']
+except:
+   FERNET_KEY = os.environ.get('FERNET_KEY')
+   app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+fernet = Fernet(FERNET_KEY)
+
+attachment_dir = os.path.join(os.getcwd(), 'attachments')
+if not os.path.isdir(attachment_dir):
+   os.mkdir(attachment_dir)
+
 
 class User():
    def __init__(self, imap_client=None, smtp_client=None):
@@ -42,24 +60,6 @@ def verify_client(client = 'imap'):
    elif client == 'smtp' and user.smtp_client.pending:
       user.smtp_client.close_connection()
       user.load_client(client)
-
-load_dotenv()
-env_vars = dotenv_values(".env")
-try:
-   FERNET_KEY = bytes(env_vars['FERNET_KEY'], 'utf-8')
-except:
-   FERNET_KEY = os.environ.get('FERNET_KEY')
-fernet = Fernet(FERNET_KEY)
-
-app = Flask(__name__)
-try:
-   app.config['SECRET_KEY'] = env_vars['SECRET_KEY']
-except:
-   app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-attachment_dir = os.path.join(os.getcwd(), 'attachments')
-if not os.path.isdir(attachment_dir):
-   os.mkdir(attachment_dir)
-app.config['ATTACHMENT_DIR'] = attachment_dir
 
 user = User()
 
@@ -247,6 +247,7 @@ def write_mail():
       attachments = form.attachment.data
       # print(attachments, len(attachments))
       Attachments = []
+      attach = {}
       if not(len(attachments) == 1 and attachments[0].filename == ''):
          for attachment in attachments:
             filename = secure_filename(attachment.filename)
@@ -258,9 +259,10 @@ def write_mail():
                pass
                flash('invalid file', 'alert-warning')
                return redirect(url_for('write_mail'))
+         attach = {'attachment_dir': attachment_dir, 'Attachments': Attachments}
       # print(f'attachments: {Attachments}')
       try:
-         user.smtp_client.send_email(TO_email, Subject, Body, Attachment = Attachments)
+         user.smtp_client.send_email(TO_email, Subject, Body, Attachment = attach)
       except Exception as e:
          empty_folder(attachment_dir)
          res = verify_client('smtp')
@@ -304,6 +306,4 @@ def empty_folder(folder):
 
 
 if __name__ == '__main__':
-   from IMAP.main import IMAP
-   from SMTP.main import SMTP
    app.run(debug=False)

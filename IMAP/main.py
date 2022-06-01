@@ -233,7 +233,7 @@ class IMAP:
                     pass 
                 else:
                     raise Exception('Select Error')
-        print(f'{self.selected_mailbox} selected. total mails available: {self.total_mails}')
+        # print(f'{self.selected_mailbox} selected. total mails available: {self.total_mails}')
     
     # Read Mailbox (Read Only)
     def Examine(self, mailbox):
@@ -703,33 +703,33 @@ class IMAP:
         # print('\nDisconnected...')
         self.__socket.close()
     
-if __name__ == '__main__':
-    imap_socket = IMAP(os.environ.get('EMAIL_USER'), os.environ.get('EMAIL_PASS'))
-    imap_socket.Get_All_MailBoxes()
-    # print(imap_socket.mailboxes)
-    # for mailbox in mailboxes:
-    #     imap_socket.Examine(mailbox)
-    # imap_socket.Select('"INBOX"')
-    # print(imap_socket.selected_mailbox, imap_socket.total_mails)
-    imap_socket.Select('"[Gmail]/Starred"')
-    imap_socket.delete_mailbox()
-    # imap_socket.Examine('INBOX')
-    # imap_socket.Examine('"[Gmail]/Important"')
-    # imap_socket.Examine('"[Gmail]/Sent Mail"')
-    # imap_socket.Status('INBOX')
-    # imap_socket.Noop() 
-    # bodies = imap_socket.fetch_body_structure(26)
-    # for body in bodies:
-    #     print(body)
-    # imap_socket.download_attachment(26, bodies)
-    # data = imap_socket.extract_text_html(1, bodies)
-    # print(f'Plain Text content....\n{data["html"]}')
-    # headers = imap_socket.fetch_mail_header(1, 1, single=True)
-    # print(headers)
-    # imap_socket.fetch_body_structure(44)
-    imap_socket.close_mailbox()
-    imap_socket.Logout()
-    imap_socket.close_connection()
+# if __name__ == '__main__':
+#     imap_socket = IMAP(os.environ.get('EMAIL_USER'), os.environ.get('EMAIL_PASS'))
+#     imap_socket.Get_All_MailBoxes()
+#     # print(imap_socket.mailboxes)
+#     # for mailbox in mailboxes:
+#     #     imap_socket.Examine(mailbox)
+#     # imap_socket.Select('"INBOX"')
+#     # print(imap_socket.selected_mailbox, imap_socket.total_mails)
+#     imap_socket.Select('"[Gmail]/Starred"')
+#     imap_socket.delete_mailbox()
+#     # imap_socket.Examine('INBOX')
+#     # imap_socket.Examine('"[Gmail]/Important"')
+#     # imap_socket.Examine('"[Gmail]/Sent Mail"')
+#     # imap_socket.Status('INBOX')
+#     # imap_socket.Noop() 
+#     # bodies = imap_socket.fetch_body_structure(26)
+#     # for body in bodies:
+#     #     print(body)
+#     # imap_socket.download_attachment(26, bodies)
+#     # data = imap_socket.extract_text_html(1, bodies)
+#     # print(f'Plain Text content....\n{data["html"]}')
+#     # headers = imap_socket.fetch_mail_header(1, 1, single=True)
+#     # print(headers)
+#     # imap_socket.fetch_body_structure(44)
+#     imap_socket.close_mailbox()
+#     imap_socket.Logout()
+#     imap_socket.close_connection()
 
 # TODO Rename, Delete
 

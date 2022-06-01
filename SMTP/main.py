@@ -3,7 +3,6 @@ import ssl
 import os
 import base64
 import time
-from app import app
 
 '''
     TLS is successor to SSL
@@ -355,6 +354,9 @@ class SMTP:
         body = Body
         self.email += body + self.CRLF
 
+        self.attachment_dir = attachments['attachment_dir']
+        attachments = attachments['Attachments']
+
         for attachment in attachments:
             self.add_start_boundary(boundary)
             encoding = self.add_body_part_header(attachment)
@@ -400,7 +402,7 @@ class SMTP:
 
     def add_body_content(self, attachment, encoding = 'base64'):
         # print("\tin add_body_content SMTP")
-        file_path = os.path.join(app.config['ATTACHMENT_DIR'], attachment['filename'])
+        file_path = os.path.join(self.attachment_dir, attachment['filename'])
         if encoding.lower().strip() in ['7bit', '8bit']:
             try:
                 file = open(file_path, 'r')
@@ -456,12 +458,12 @@ class SMTP:
         # print('\nDisconnected...')
     
 
-if __name__ == '__main__':
-    smtp_socket = SMTP(os.environ.get('EMAIL_USER'), os.environ.get('EMAIL_PASS'))
-    smtp_socket.send_email('tusharpathade475@gmail.com', 'Mail from imap-smtp client', 'This is Body of mail!')
-    # smtp_socket.send_email_with_attachment('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments', ['attachment.txt', 'img.png'])
-    smtp_socket.quit()
-    smtp_socket.close_connection()
+# if __name__ == '__main__':
+#     smtp_socket = SMTP(os.environ.get('EMAIL_USER'), os.environ.get('EMAIL_PASS'))
+#     smtp_socket.send_email('tusharpathade475@gmail.com', 'Mail from imap-smtp client', 'This is Body of mail!')
+#     # smtp_socket.send_email_with_attachment('tusharpathade475@gmail.com', 'Mailing from imap-smtp client With Attachments', ['attachment.txt', 'img.png'])
+#     smtp_socket.quit()
+#     smtp_socket.close_connection()
 
 
 '''

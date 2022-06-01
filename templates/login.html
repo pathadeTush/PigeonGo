@@ -7,7 +7,7 @@
             <img src="{{url_for('static', filename='images1.jpeg')}}" alt="" class="card-img-top" />
             <div class="card-body">
                <h5 class="card-title text-center">Login</h5>
-               <form class="row g-3" action="" method="POST" enctype="multipart/form-data">
+               <form class="row g-3" action="" method="POST" enctype="multipart/form-data" autocomplete="off">
                   {{ form.hidden_tag() }}
                   <div>
                      {{ form.email.label(class="form-label") }}
