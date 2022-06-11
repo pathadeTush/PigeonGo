@@ -24,7 +24,7 @@ function fetchHeaders(mailbox) {
         card.classList.add('card');
         let cardBody = document.createElement('div');
         cardBody.classList.add('card-body');
-        
+
         let cardTitle = document.createElement('div');
         cardTitle.classList.add('card-title', 'd-flex', 'justify-content-between');
         let div1 = document.createElement('div');
@@ -55,10 +55,10 @@ function fetchHeaders(mailbox) {
         row.appendChild(col);
         table.appendChild(row);
 
-        lastIdx = `${headers[i].index}` 
+        lastIdx = `${headers[i].index}`
       }
       loadMoreBtn.classList.remove('disabled')
-      if(lastIdx <= 1){
+      if (lastIdx <= 1) {
         const loadMore = document.getElementById('loadMore');
         loadMore.style.display = "none";
       }
@@ -68,9 +68,32 @@ function fetchHeaders(mailbox) {
       document.getElementById('loading').style.display = "none";
     }
   };
-  
+
   xhttp.open("POST", `/open_mailbox/${mailbox}`, true);
   xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   xhttp.send();
 }
 
+
+function prepareDownloads(mailbox, index) {
+  const downloadAttachment = document.getElementById('download-attachment')
+  downloadAttachment.style.display = "none";
+  const attachLinks = document.getElementsByClassName('attach-links')
+
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function () {
+    if (this.readyState == 4 && this.status == 200) {
+      console.log(this.responseText)
+      const filenames = JSON.parse(this.responseText).file_saved;
+      console.log(filenames)
+      for(let i = 0; i < filenames.length; i++){
+        let attachLink = attachLinks[i];
+        attachLink.href = `/downloads/${filenames[i]}`
+        attachLink.style.display = "inline-block";
+      }
+    }
+  };
+  xhttp.open("POST", `/${mailbox}/${index}`, true);
+  xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  xhttp.send();
+}

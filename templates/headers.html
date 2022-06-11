@@ -17,6 +17,11 @@
          </tr>
       </thead>
       <tbody id="headers">
+         {% if not headers %}
+         <tr>
+            <td><p class="text-center">No emails</p></td>
+         </tr>
+         {% endif %}
          {% for header in headers %}
          <tr>
             <td>
@@ -42,8 +47,6 @@
    </table>
 
 </section>
-
-<script src="{{url_for('static', filename='ajax.js')}}"></script>
 
 {% if not allFetched %}
 <div class="text-center mb-4" id="loadMore">

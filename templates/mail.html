@@ -42,25 +42,18 @@
       {% if data['attachment'] %}
       <p class="text-center">
          <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample"
-            aria-expanded="false" aria-controls="collapseExample">
-            View Attachments
-         </button>
+            aria-expanded="false" aria-controls="collapseExample" onclick="toggleText(this);">View Attachments</button>
       </p>
       <div class="collapse" id="collapseExample">
          <div class="card card-body">
             <ul>
                {% for attachment in data['attachment'] %}
-               <li>{{attachment}}</li>
+               <li>{{attachment}} &nbsp; <a href="#" class="btn btn-sm btn-outline-primary attach-links"><i class="fa fa-download"></i></a></li>
                {% endfor %}
             </ul>
-            {% if form %}
-            <form class="row g-3 text-center" action="" method="POST" enctype="multipart/form-data" autocomplete="off">
-               {{ form.hidden_tag() }}
-               <div class="col-12 mb-2">
-                  {{ form.submit(class="btn btn-outline-danger", onclick="loading();")}}
-               </div>
-            </form>
-            {% endif %}
+            <div class="text-center col-12 mb-2">
+               <button class="btn btn-outline-danger" id="download-attachment" onclick="return prepareDownloads('{{mailbox}}', '{{header['index']}}')"> Prepare Downloads</button>
+            </div>
          </div>
       </div>
       {% endif %}

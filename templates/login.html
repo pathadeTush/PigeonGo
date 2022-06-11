@@ -1,13 +1,13 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center mt-5">
+<div class="container d-flex justify-content-center align-items-center mt-4">
    <div class="row">
       <div class="col-md-8 offset-md-2 col-xl-8 offset-xl-2">
          <div class="card shadow">
             <img src="{{url_for('static', filename='images1.jpeg')}}" alt="" class="card-img-top" />
             <div class="card-body">
                <h5 class="card-title text-center">Login</h5>
-               <form class="row g-3" action="" method="POST" enctype="multipart/form-data" autocomplete="off">
+               <form class="row g-2" action="" method="POST" enctype="multipart/form-data" autocomplete="off">
                   {{ form.hidden_tag() }}
                   <div>
                      {{ form.email.label(class="form-label") }}
@@ -39,6 +39,40 @@
                      {{ form.submit(class="btn btn-outline-primary", onclick="loading();") }}
                   </div>
                </form>
+               <!-- Button trigger modal -->
+               <button type="button" class="btn btn-sm btn-warning mt-3" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                  <i class="fa fa-question-circle"></i>
+               </button>
+
+               <!-- Modal -->
+               <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false"
+                  tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-scrollable">
+                     <div class="modal-content">
+                        <div class="modal-header">
+                           <h5 class="modal-title" id="staticBackdropLabel">For gmail login follow below steps:</h5>
+                           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                           <ul>
+                              <li>If 2 factor Authentication is enabled</li>
+                              If you use <a href="https://support.google.com/accounts/answer/185839" target="_blank" style="color: blue;">2-Step-Verification</a> and get a "password incorrect" error when you sign in, you can try to use an App Password.
+                              <ol>
+                                 <li>Go to your <a href="https://myaccount.google.com/" target="_blank" style="color: blue;">Google Account.</a></li>
+                                 <li>Select Security.
+                                 </li>
+                                 <li>Under "Signing in to Google," select <b>App Passwords</b>. You may need to sign in.</li>
+                                 <li>At the bottom, choose <b>Select app</b> and choose the app you using and then <b>Select device</b> and choose the device you’re using and then <b>Generate</b>.</li>
+                                 <li>Follow the instructions to enter the App Password. The App Password is the 16-character code in the yellow bar on your device.</li>
+                                 <li>Tap Done.</li>
+                              </ol>
+                              <li>Turn on less secure app access:</li>
+                              <p>To turn on less secure app access <a href="https://support.google.com/accounts/answer/6010255?hl=en&visit_id=637904926886669283-3505685736&p=less-secure-apps&rd=1#zippy=%2Cif-less-secure-app-access-is-off-for-your-account" target="_blank" style="color: blue;">click here</a></p>
+                           </ul>
+                        </div>
+                     </div>
+                  </div>
+               </div>
             </div>
          </div>
       </div>

@@ -11,56 +11,16 @@
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
       integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA=="
       crossorigin="anonymous" />
-
-
-   <script>
-      function parseMailbox(mailbox){
-         mailbox = mailbox.trim()
-         if(mailbox[0] == '&')
-            mailbox = mailbox.slice(5, -5)
-         mailbox = mailbox.split('$').pop()
-         return mailbox
-      }
-   </script>
-
-   <script>
-      function loading() {
-         document.getElementById('body').style.pointerEvents = "none";
-         document.getElementById('loading').style.display = "block";
-      }
-   </script>
+   <!-- CSS -->
+   <link rel="stylesheet" href="{{url_for('static', filename='style.css')}}">
+    <!-- JS -->
+    <script src="{{url_for('static', filename='script.js')}}"></script>
 
 <title>[</title>
 <script>
   document.title = "PigeonGo: " + parseMailbox('{{title}}')
   </script>
 <title>]</title>
-
-   <style>
-      body {
-         background-color: rgba(0, 0, 0, 0.9);
-         display: flex;
-         flex-direction: column;
-         justify-content: space-between;
-         height: 100vh;
-      }
-
-      a {
-         text-decoration: none;
-         color: rgb(46, 46, 46);
-      }
-      #loading{
-         position: fixed;
-         display: none;
-         z-index: 3;
-         width: 250px;
-         height: 250px;
-         top: 50%;
-         left: 50%;
-         margin-top: -125px; /* Negative half of height. */
-         margin-left: -125px; /* Negative half of width. */
-      }
-   </style>
 </head>
 
 <body id="body">
@@ -91,16 +51,15 @@
    visibility:hidden;transition: all 0.5s ease-out;">
          <img src="{{url_for('static', filename='scroll-up.png')}}" style="height: 2.5em; width: 2.5em;" alt="...">
       </a>
-
       <script>
          const scrollUpBtn = document.getElementById('scroll-up-btn')
          window.onscroll = function () { scrollFunction() };
          function scrollFunction() {
-            if (document.body.scrollTop > 45 || document.documentElement.scrollTop > 45) {
+         if (document.body.scrollTop > 45 || document.documentElement.scrollTop > 45) {
                scrollUpBtn.style.visibility = "visible";
-            } else {
+         } else {
                scrollUpBtn.style.visibility = "hidden";
-            }
+         }
          }
       </script>
       <!-- ===================================================== -->
@@ -142,7 +101,7 @@
       <!-- Copyright -->
       <div class="text-center pb-2">
          © <span id="year"></span> Copyright:
-         <a class="text-white" href="./home.html">email-client</a>
+         <a class="text-white" href="{{url_for('home')}}">PigeonGo</a>
          <div class="text-center">Developed by - <a style="text-decoration: none; color:whitesmoke;" href="https://github.com/pathadeTush" target="_blank">Tushar Pathade</a></div>
       </div>
 
@@ -157,6 +116,8 @@
    <!-- Bootstrap JS -->
    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
+   <!-- AJAX -->
+   <script src="{{url_for('static', filename='ajax.js')}}"></script>
     <!-- Refresh page on back -->
     <script>
        if(!!window.performance && window.performance.navigation.type === 2)

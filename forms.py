@@ -8,12 +8,6 @@ class LoginForm(FlaskForm):
    password = PasswordField('Password', validators=[DataRequired()])
    submit = SubmitField('Login')
 
-class LoadMoreMailForm(FlaskForm):
-   submit = SubmitField('Load More Mails')
-
-class DownloadAttachmentForm(FlaskForm):
-   submit = SubmitField('Download All Attachments')
-
 class WriteMailForm(FlaskForm):
    TO_email = StringField('To', validators=[DataRequired(), Email()], render_kw={"placeholder": "put email address (valid) of recipent"})
    Subject = StringField('Subject', render_kw={"placeholder": "Give subject to your mail!"})
