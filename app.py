@@ -144,21 +144,19 @@ def read_mails():
 @app.route('/open_mailbox/<mailbox>', methods=['GET', 'POST'])
 def open_mailbox(mailbox):
    user = app.config['user']
-   was_active = user.is_active()
    res = verify_client()
    if(res):
       return res
    prev_mailbox = mailbox
    mailbox = mailbox.replace('<', '[').replace('>', ']').replace('-', ' ').replace('$', '/')
-   if not was_active:
-      try:
-         user.imap_client.Get_All_MailBoxes()
-      except Exception as e:
-         res = verify_client()
-         if(res):
-            return res
-         something_went_wrong(e)
-         return redirect(url_for('read_mails'))
+   try:
+      user.imap_client.Get_All_MailBoxes()
+   except Exception as e:
+      res = verify_client()
+      if(res):
+         return res
+      something_went_wrong(e)
+      return redirect(url_for('read_mails'))
 
    try:
       user.imap_client.Select(mailbox)
@@ -171,7 +169,7 @@ def open_mailbox(mailbox):
       return redirect(url_for('read_mails'))
    mail_buffer = 10
    headers = []
-   if request.method == 'POST':
+   if request.method == 'POST' or total_mails == 0:
       try:
          headers = user.imap_client.fetch_mail_header(1, mail_buffer)
       except Exception as e:
@@ -240,7 +238,9 @@ def mail(mailbox, index):
          something_went_wrong(e)
          return redirect(url_for('open_mailbox', mailbox=prev_mailbox))
       if data['html']:
-         file = open('static/html.html', 'w+')
+         downloads = os.path.join(os.getcwd(), app.config['DOWNLOADS'])
+         filepath = os.path.join(downloads, 'html.html')
+         file = open(f'{filepath}', 'w+')
          file.write(data['html'])
          file.close()
    if request.method == 'POST':
@@ -323,14 +323,13 @@ def logout():
       user.smtp_client.close_connection()
    session.clear()
    del user
-   empty_folder(os.path.join(app.root_path, app.config['DOWNLOADS']))
+   empty_folder(os.path.join(os.getcwd(), app.config['DOWNLOADS']))
    flash('logout successfully!', 'alert-success')
    return redirect(url_for('login'))
 
 @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
-   print(f'filename: {filename}')
-   downloads = os.path.join(app.root_path, app.config['DOWNLOADS'])
+   downloads = os.path.join(os.getcwd(), app.config['DOWNLOADS'])
    return send_from_directory(directory=downloads, path=filename)
 
 def empty_folder(folder):
@@ -338,4 +337,4 @@ def empty_folder(folder):
       os.remove(os.path.join(folder, file))
 
 if __name__ == '__main__':
-   app.run(debug=True)
+   app.run(debug=False)
