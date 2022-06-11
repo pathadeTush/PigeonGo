@@ -240,7 +240,7 @@ def mail(mailbox, index):
          something_went_wrong(e)
          return redirect(url_for('open_mailbox', mailbox=prev_mailbox))
       if data['html']:
-         file = open('static/html.html', 'w+')
+         file = open('./downloads/html.html', 'w+')
          file.write(data['html'])
          file.close()
    if request.method == 'POST':
@@ -329,7 +329,6 @@ def logout():
 
 @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
-   print(f'filename: {filename}')
    downloads = os.path.join(app.root_path, app.config['DOWNLOADS'])
    return send_from_directory(directory=downloads, path=filename)
 
@@ -338,4 +337,4 @@ def empty_folder(folder):
       os.remove(os.path.join(folder, file))
 
 if __name__ == '__main__':
-   app.run(debug=True)
+   app.run(debug=False)
