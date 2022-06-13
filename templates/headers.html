@@ -17,11 +17,11 @@
          </tr>
       </thead>
       <tbody id="headers">
-         {% if not headers %}
+         {% if headers['headers']|length < 1 and allFetched %}
          <tr>
             <td><p class="text-center">No emails</p></td>
          </tr>
-         {% endif %}
+         {% else %}
          {% for header in headers %}
          <tr>
             <td>
@@ -43,6 +43,7 @@
             </td>
          </tr>
          {% endfor %}
+         {% endif %}
       </tbody>
    </table>
 

@@ -19,10 +19,13 @@ except:
 fernet = Fernet(FERNET_KEY)
 
 attachment_dir = os.path.join(os.getcwd(), 'attachments')
+downloads_dir = os.path.join(os.getcwd(), 'downloads')
 if not os.path.isdir(attachment_dir):
    os.mkdir(attachment_dir)
+if not os.path.isdir(downloads_dir):
+   os.mkdir(downloads_dir)
 
-app.config['DOWNLOADS'] = 'downloads'
+app.config['DOWNLOADS'] = downloads_dir
 
 def something_went_wrong(e):
    flash('something went wrong. Try again or refresh the page...', 'alert-danger')
@@ -169,7 +172,7 @@ def open_mailbox(mailbox):
       return redirect(url_for('read_mails'))
    mail_buffer = 10
    headers = []
-   if request.method == 'POST' or total_mails == 0:
+   if request.method == 'POST':
       try:
          headers = user.imap_client.fetch_mail_header(1, mail_buffer)
       except Exception as e:
@@ -238,9 +241,8 @@ def mail(mailbox, index):
          something_went_wrong(e)
          return redirect(url_for('open_mailbox', mailbox=prev_mailbox))
       if data['html']:
-         downloads = os.path.join(os.getcwd(), app.config['DOWNLOADS'])
-         filepath = os.path.join(downloads, 'html.html')
-         file = open(f'{filepath}', 'w+')
+         filepath = os.path.join(app.config['DOWNLOADS'], 'html.html')
+         file = open(f'{filepath}', 'w')
          file.write(data['html'])
          file.close()
    if request.method == 'POST':
@@ -323,14 +325,13 @@ def logout():
       user.smtp_client.close_connection()
    session.clear()
    del user
-   empty_folder(os.path.join(os.getcwd(), app.config['DOWNLOADS']))
+   empty_folder(app.config['DOWNLOADS'])
    flash('logout successfully!', 'alert-success')
    return redirect(url_for('login'))
 
 @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
-   downloads = os.path.join(os.getcwd(), app.config['DOWNLOADS'])
-   return send_from_directory(directory=downloads, path=filename)
+   return send_from_directory(directory=app.config['DOWNLOADS'], path=filename)
 
 def empty_folder(folder):
    for file in os.listdir(folder):
