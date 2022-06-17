@@ -19,10 +19,13 @@ except:
 fernet = Fernet(FERNET_KEY)
 
 attachment_dir = os.path.join(os.getcwd(), 'attachments')
+downloads_dir = os.path.join(os.getcwd(), 'downloads')
 if not os.path.isdir(attachment_dir):
    os.mkdir(attachment_dir)
+if not os.path.isdir(downloads_dir):
+   os.mkdir(downloads_dir)
 
-app.config['DOWNLOADS'] = 'downloads'
+app.config['DOWNLOADS'] = downloads_dir
 
 def something_went_wrong(e):
    flash('something went wrong. Try again or refresh the page...', 'alert-danger')
@@ -144,21 +147,19 @@ def read_mails():
 @app.route('/open_mailbox/<mailbox>', methods=['GET', 'POST'])
 def open_mailbox(mailbox):
    user = app.config['user']
-   was_active = user.is_active()
    res = verify_client()
    if(res):
       return res
    prev_mailbox = mailbox
    mailbox = mailbox.replace('<', '[').replace('>', ']').replace('-', ' ').replace('$', '/')
-   if not was_active:
-      try:
-         user.imap_client.Get_All_MailBoxes()
-      except Exception as e:
-         res = verify_client()
-         if(res):
-            return res
-         something_went_wrong(e)
-         return redirect(url_for('read_mails'))
+   try:
+      user.imap_client.Get_All_MailBoxes()
+   except Exception as e:
+      res = verify_client()
+      if(res):
+         return res
+      something_went_wrong(e)
+      return redirect(url_for('read_mails'))
 
    try:
       user.imap_client.Select(mailbox)
@@ -240,9 +241,8 @@ def mail(mailbox, index):
          something_went_wrong(e)
          return redirect(url_for('open_mailbox', mailbox=prev_mailbox))
       if data['html']:
-         filepath = os.path.join(app.root_path, app.config['DOWNLOADS'])
-         filepath = os.path.join(filepath, 'html.html')
-         file = open(f"{filepath}", 'w+')
+         filepath = os.path.join(app.config['DOWNLOADS'], 'html.html')
+         file = open(f'{filepath}', 'w')
          file.write(data['html'])
          file.close()
    if request.method == 'POST':
@@ -325,14 +325,13 @@ def logout():
       user.smtp_client.close_connection()
    session.clear()
    del user
-   empty_folder(os.path.join(app.root_path, app.config['DOWNLOADS']))
+   empty_folder(app.config['DOWNLOADS'])
    flash('logout successfully!', 'alert-success')
    return redirect(url_for('login'))
 
 @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
-   downloads = os.path.join(app.root_path, app.config['DOWNLOADS'])
-   return send_from_directory(directory=downloads, path=filename)
+   return send_from_directory(directory=app.config['DOWNLOADS'], path=filename)
 
 def empty_folder(folder):
    for file in os.listdir(folder):
