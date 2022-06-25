@@ -1,9 +1,9 @@
 # PigeonGo
 ### App is hosted on live. [view demo](https://PigeonGo.herokuapp.com)
 
-![PigeonGo](./screenshots/1.png?raw=true "Title")
-![PigeonGo](./screenshots/5.png?raw=true "Title")
-![PigeonGo](./screenshots/9.png?raw=true "Title")
+![PigeonGo](./screenshots/1.png?raw=true "Home")
+![PigeonGo](./screenshots/5.png?raw=true "Headers")
+![PigeonGo](./screenshots/9.png?raw=true "Write Mail")
 
 ## Installation
 
