@@ -20,9 +20,9 @@ fernet = Fernet(FERNET_KEY)
 
 attachment_dir = os.path.join(os.getcwd(), 'attachments')
 downloads_dir = os.path.join(os.getcwd(), 'downloads')
-if not os.path.isdir(attachment_dir):
+if not os.path.exists(attachment_dir):
    os.mkdir(attachment_dir)
-if not os.path.isdir(downloads_dir):
+if not os.path.exists(downloads_dir):
    os.mkdir(downloads_dir)
 
 app.config['DOWNLOADS'] = downloads_dir
