@@ -1,10 +1,14 @@
 # PigeonGo
 
+![PigeonGo](./screenshots/1.png?raw=true "Title")
+![PigeonGo](./screenshots/5.png?raw=true "Title")
+![PigeonGo](./screenshots/9.png?raw=true "Title")
+
 ## Installation
 ### App is hosted on live. [view demo](https://PigeonGo.herokuapp.com)
 ### PigeonGo is an opensource email client which works with popular email services like Gmail and outlook.
 
-### Steps to run:
+### Steps to run (Linux):
 
 - **First create virtual environment and activate it.**
 
@@ -24,9 +28,6 @@
 - **Explore App**
   - Open browser and type http://127.0.0.1:5000
   - There you go!
-  
-- **To stop the program Press** </br>
-  - For windows and linux - `ctrl + c`
 
 - **Deactivate the virtual environment**
   - `deactivate`
@@ -40,19 +41,14 @@
 - ### User friendly GUI.
 
 
-## Issues
-- ### For outlook, attachments aren't getting mailed along with body.
-
-
 ## TODO:
-- ### Improve parser.
+- ### Improve [parser](https://github.com/pathadeTush/PigeonGo/blob/01fddf086f73075c76b08d60f265856186cab5a4/IMAP/main.py#L292).
 - ### Store opened mails as cache on server and delete them once user is logged out.
 - ### Add more features:
     - ### Mark mail read/unread
     - ### Delete mail
     - ### check for new mail
     - ### Unsubscribe newsletters
-- ### Make code more modular.
 - ### Improve frontend
 
 
