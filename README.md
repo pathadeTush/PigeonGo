@@ -1,12 +1,11 @@
 # PigeonGo
+### App is hosted on live. [view demo](https://PigeonGo.herokuapp.com)
 
 ![PigeonGo](./screenshots/1.png?raw=true "Title")
 ![PigeonGo](./screenshots/5.png?raw=true "Title")
 ![PigeonGo](./screenshots/9.png?raw=true "Title")
 
 ## Installation
-### App is hosted on live. [view demo](https://PigeonGo.herokuapp.com)
-### PigeonGo is an opensource email client which works with popular email services like Gmail and outlook.
 
 ### Steps to run (Linux):
 
